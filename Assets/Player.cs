@@ -1,10 +1,7 @@
-using Mirror;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-public class Player : NetworkBehaviour
+public class Player : MonoBehaviour
 {
     #region Serialized Fields
 
@@ -36,13 +33,15 @@ public class Player : NetworkBehaviour
 
     #region Controls
 
+    private InputDevice _device;
+
     private bool _up = false;
 
     private bool _down = false;
 
     private bool _left = false;
 
-    private bool _right= false;
+    private bool _right = false;
 
     private bool _serverJump = false;
 
@@ -52,24 +51,7 @@ public class Player : NetworkBehaviour
 
     private bool _serverFastFall = false;
 
-    private KeyCode Right = KeyCode.D;
-
-    private KeyCode Left = KeyCode.A;
-
-    private KeyCode Up = KeyCode.W;
-
-    private KeyCode Down = KeyCode.S;
-
-    private bool Jump => Input.GetKeyDown(KeyCode.Space);
-
-    private bool Dash => Input.GetKeyDown(KeyCode.RightShift);
-
-    private bool FastFall => Input.GetKeyDown(KeyCode.S);
-
-    private bool Attack => Input.GetKeyDown(KeyCode.Slash);
-
-    [Command]
-    private void SendJump()
+    protected void Jump()
     {
         if (_launched)
             return;
@@ -77,8 +59,7 @@ public class Player : NetworkBehaviour
         _serverJump = true;
     }
 
-    [Command]
-    private void SendDash()
+    protected void Dash()
     {
         if (_launched)
             return;
@@ -86,8 +67,7 @@ public class Player : NetworkBehaviour
         _serverDash = true;
     }
 
-    [Command]
-    private void SendFastFall()
+    protected void FastFall()
     {
         if (_launched)
             return;
@@ -95,8 +75,7 @@ public class Player : NetworkBehaviour
         _serverFastFall = true;
     }
 
-    [Command]
-    private void SendAttack()
+    protected void Attack()
     {
         if (_launched)
             return;
@@ -104,50 +83,42 @@ public class Player : NetworkBehaviour
         _serverAttack = true;
     }
 
-    [Command]
-    private void SendUp()
+    protected void Up()
     {
         _up = true;
     }
 
-    [Command]
-    private void RetractUp()
+    protected void RetractUp()
     {
         _up = false;
     }
 
-    [Command]
-    private void SendDown()
+    protected void Down()
     {
         _down = true;
     }
 
-    [Command]
-    private void RetractDown()
+    protected void RetractDown()
     {
         _down = false;
     }
 
-    [Command]
-    private void SendLeft()
+    protected void Left()
     {
         _left = true;
     }
 
-    [Command]
-    private void RetractLeft()
+    protected void RetractLeft()
     {
         _left = false;
     }
 
-    [Command]
-    private void SendRight()
+    protected void Right()
     {
         _right = true;
     }
 
-    [Command]
-    private void RetractRight()
+    protected void RetractRight()
     {
         _right = false;
     }
@@ -156,10 +127,8 @@ public class Player : NetworkBehaviour
 
     #region Private Fields
 
-    [SyncVar(hook = "NameChanged")]
     private string name;
 
-    [SyncVar(hook = "ColorChanged")]
     private Color color;
 
     private bool _dashInitiated = false;
@@ -193,7 +162,6 @@ public class Player : NetworkBehaviour
     private Rigidbody2D _rb;
 
     private Animator _animator;
-    private NetworkAnimator _networkAnimator;
 
     #endregion
 
@@ -201,18 +169,15 @@ public class Player : NetworkBehaviour
 
     private void PlaySound(int id) => sounds[id].Play();
 
-    [ServerCallback]
     private void EnableJump() => _canJump = true;
 
-    [ServerCallback]
     private void Respawn()
     {
         transform.position = GameManager.Instance.GetRandomSpawnPosition();
 
-        _rb.velocity = Vector2.zero;
+        _rb.linearVelocity = Vector2.zero;
     }
 
-    [ServerCallback]
     private void ActivateInput()
     {
         _grounded = true;
@@ -223,7 +188,7 @@ public class Player : NetworkBehaviour
         StopDodge();
         _launched = false;
         _rb.gravityScale = _gravity;
-        _rb.velocity = Vector2.zero;
+        _rb.linearVelocity = Vector2.zero;
         _rb.sharedMaterial = null;
         StopAttack();
         transform.right = Vector2.right;
@@ -239,23 +204,20 @@ public class Player : NetworkBehaviour
         _animator.SetBool("down", false);*/
     }
 
-    [ServerCallback]
     private void ApplyDashSpeed()
     {
-        _rb.velocity = new Vector2((transform.eulerAngles.y > 90 ? -1 : 1) * dashSpeed, _rb.velocity.y);
+        _rb.linearVelocity = new Vector2((transform.eulerAngles.y > 90 ? -1 : 1) * dashSpeed, _rb.linearVelocity.y);
 
         //_animator.SetBool("dash", false);
     }
 
-    [ServerCallback]
     private void CancelHorizontalMomentum()
     {
-        _rb.velocity = new Vector2(0, _rb.velocity.y);
+        _rb.linearVelocity = new Vector2(0, _rb.linearVelocity.y);
 
         _dashInitiated = false;
     }
 
-    [ServerCallback]
     private void DodgeDir()
     {
         if (_launched)
@@ -272,10 +234,10 @@ public class Player : NetworkBehaviour
         {
             if (dir == Vector2.zero || dir == new Vector2(0, 1))
             {
-                _rb.velocity = dir * dodgeSpeed;
+                _rb.linearVelocity = dir * dodgeSpeed;
             }
         }
-        else _rb.velocity = dir * dodgeSpeed;
+        else _rb.linearVelocity = dir * dodgeSpeed;
 
         _dodging = true;
 
@@ -284,7 +246,6 @@ public class Player : NetworkBehaviour
         gameObject.layer = LayerMask.NameToLayer("PlayerNoHit");
     }
 
-    [ServerCallback]
     private void RecastDodge()
     {
         if (_launched)
@@ -292,10 +253,9 @@ public class Player : NetworkBehaviour
 
         _canRecastDodge = true;
 
-        _rb.velocity = Vector2.zero;
+        _rb.linearVelocity = Vector2.zero;
     }
 
-    [ServerCallback]
     private void StopDodge()
     {
         _dodging = false;
@@ -303,10 +263,9 @@ public class Player : NetworkBehaviour
         gameObject.layer = LayerMask.NameToLayer("Player");
     }
 
-    [ServerCallback]
     private void ApplyJumpHeight()
     {
-        _rb.velocity = new Vector2(_rb.velocity.x, jumpHeight);
+        _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, jumpHeight);
 
         //_animator.SetBool("jump", false);
 
@@ -317,7 +276,6 @@ public class Player : NetworkBehaviour
         _canJump = true;
     }
 
-    [ServerCallback]
     private void InitiateAttack()
     {
         /*_animator.SetBool("side", false);
@@ -331,24 +289,21 @@ public class Player : NetworkBehaviour
         _jumpInitiated = false;
     }
 
-    [ServerCallback]
     private void ActivateDrag()
     {
-        _rb.drag = 4;
+        _rb.linearDamping = 4;
     }
 
-    [ServerCallback]
     private void StopAttack()
     {
         _attacking = false;
 
-        _rb.drag = 0;
+        _rb.linearDamping = 0;
     }
 
-    [ServerCallback]
     private void LaunchHorizontal(float speed)
     {
-        _rb.velocity = new Vector2((transform.eulerAngles.y > 90 ? -1 : 1) * speed, 0);
+        _rb.linearVelocity = new Vector2((transform.eulerAngles.y > 90 ? -1 : 1) * speed, 0);
     }
 
 
@@ -356,37 +311,34 @@ public class Player : NetworkBehaviour
 
     #region Public Methods
 
-    [Server]
     public void Blast()
     {
-        _networkAnimator.SetTrigger("respawn");
+        _animator.SetTrigger("respawn");
 
-        _rb.velocity = Vector2.zero;
+        _rb.linearVelocity = Vector2.zero;
 
         _rb.gravityScale = 0;
 
         _launched = true;
     }
 
-    [Server]
     public void Launch(Vector2 dir)
     {
         _launched = true;
 
         _rb.gravityScale = 1f;
 
-        _rb.velocity = dir;
+        _rb.linearVelocity = dir;
 
         _rb.sharedMaterial = bounceMaterial;
 
-        _networkAnimator.SetTrigger("launch");
+        _animator.SetTrigger("launch");
     }
 
     #endregion
 
     #region Collision
 
-    [ServerCallback]
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if (collision.transform.tag == "Ground")
@@ -399,7 +351,6 @@ public class Player : NetworkBehaviour
         }
     }
 
-    [ServerCallback]
     private void OnCollisionExit2D(Collision2D collision)
     {
         if (collision.transform.tag == "Ground")
@@ -412,22 +363,13 @@ public class Player : NetworkBehaviour
     {
         _rb = GetComponent<Rigidbody2D>();
         _animator = GetComponent<Animator>();
-        _networkAnimator = GetComponent<NetworkAnimator>();
 
         _gravity = _rb.gravityScale;
 
         Camera.main.GetComponent<CameraFollow>().AddPlayer(this);
     }
 
-    public override void OnStartAuthority()
-    {
-        base.OnStartAuthority();
-
-        ChangeAppearance(UserPrefs.userName, UserPrefs.color);
-    }
-
-    [Command]
-    private void ChangeAppearance(string name, Color color)
+    public void ChangeAppearance(string name, Color color)
     {
         this.name = name;
         this.color = color;
@@ -448,57 +390,45 @@ public class Player : NetworkBehaviour
 
     private void Update()
     {
-        if (hasAuthority)
-        {
-            if (Jump)
-                SendJump();
+        if (_device.JumpDown)
+                Jump();
 
-            if (Dash)
-                SendDash();
+            if (_device.DashDown)
+                Dash();
 
-            if (FastFall)
-                SendFastFall();
+            if (_device.FastFallDown)
+                FastFall();
 
-            if (Attack)
-                SendAttack();
+            if (_device.AttackDown)
+                Attack();
 
-            if (Input.GetKeyDown(Up))
-                SendUp();
+            if (_device.UpDown)
+                Up();
 
-            if (Input.GetKeyUp(Up))
+            if (_device.UpUp)
                 RetractUp();
 
-            if (Input.GetKeyDown(Down))
-                SendDown();
+            if (_device.DownDown)
+                Down();
 
-            if (Input.GetKeyUp(Down))
+            if (_device.DownUp)
                 RetractDown();
 
-            if (Input.GetKeyDown(Left))
-                SendLeft();
+            if (_device.LeftDown)
+                Left();
 
-            if (Input.GetKeyUp(Left))
+            if (_device.LeftUp)
                 RetractLeft();
 
-            if (Input.GetKeyDown(Right))
-                SendRight();
+            if (_device.RightDown)
+                Right();
 
-            if (Input.GetKeyUp(Right))
+            if (_device.RightUp)
                 RetractRight();
-        }
-
-        if (!isServer)
-            return;
-
-        if(Input.GetKeyDown(KeyCode.F))
-        {
-            _serverJump = true;
-            _serverDash = true;
-        }
 
         if (_launched)
         {
-            transform.right = -_rb.velocity;
+            transform.right = -_rb.linearVelocity;
 
             return;
         }
@@ -513,8 +443,6 @@ public class Player : NetworkBehaviour
 
         _animator.SetBool("run", xDir != 0);
 
-        Debug.Log(_jumps + " " + _grounded + " " + _canJump + " " + _dodging + " " + _attacking + " " + _dashInitiated);
-
         if (_serverJump)
         {
             _serverJump = false;
@@ -524,7 +452,7 @@ public class Player : NetworkBehaviour
 
             _jumpInitiated = true;
 
-            _networkAnimator.SetTrigger("jump");
+            _animator.SetTrigger("jump");
 
             _canJump = false;
 
@@ -539,7 +467,7 @@ public class Player : NetworkBehaviour
             if (!(!_grounded && _dodging == false && _attacking == false))
                 return;
 
-            _rb.velocity = new Vector2(_rb.velocity.x, -maxFallSpeed);
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, -maxFallSpeed);
         }
 
          _animator.SetBool("inAir", !_grounded);
@@ -559,11 +487,11 @@ public class Player : NetworkBehaviour
             dir.y -= _down ? 1 : 0;
 
             if (dir.x != 0)
-                _networkAnimator.SetTrigger("side");
+                _animator.SetTrigger("side");
             else if (dir.y < 0)
-                _networkAnimator.SetTrigger("down");
+                _animator.SetTrigger("down");
             else
-                _networkAnimator.SetTrigger("up");
+                _animator.SetTrigger("up");
 
             if (xDir != 0)
                 transform.eulerAngles = new Vector3(0, xDir > 0 ? 0 : 180, 0);
@@ -587,7 +515,7 @@ public class Player : NetworkBehaviour
                 {
                     if (_animator.GetCurrentAnimatorStateInfo(0).IsName("dodge") == false)
                     {
-                        _networkAnimator.SetTrigger("dodge");
+                        _animator.SetTrigger("dodge");
 
                         if(dir == new Vector2(0, 1))
                             _dodges--;
@@ -599,12 +527,12 @@ public class Player : NetworkBehaviour
                 {
                     _dashInitiated = _serverDash;
 
-                    _networkAnimator.SetTrigger("dash");
+                    _animator.SetTrigger("dash");
                 }
             }
 
             if (_dodging == false)
-                _rb.velocity = new Vector2(xDir * movementSpeed, _rb.velocity.y);
+                _rb.linearVelocity = new Vector2(xDir * movementSpeed, _rb.linearVelocity.y);
         }
         else if ((_canRecastDodge || _dodging == false) && _grounded == false)
         {
@@ -615,7 +543,7 @@ public class Player : NetworkBehaviour
             {
                 _dodges--;
 
-                _networkAnimator.SetTrigger("dodge");
+                _animator.SetTrigger("dodge");
 
                 _canRecastDodge = !_serverDash;
             }
@@ -627,7 +555,6 @@ public class Player : NetworkBehaviour
             transform.eulerAngles = new Vector3(0, xDir > 0 ? 0 : 180, 0);
     }
 
-    [ServerCallback]
     private void FixedUpdate()
     {
         if (_launched)
@@ -637,10 +564,15 @@ public class Player : NetworkBehaviour
         if (_dodging)
             return;
 
-        if (_rb.velocity.y < -maxFallSpeed)
-            _rb.velocity = new Vector2(_rb.velocity.x, -maxFallSpeed);
+        if (_rb.linearVelocity.y < -maxFallSpeed)
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, -maxFallSpeed);
 
         if (!_grounded)
-            _rb.velocity = new Vector2(_rb.velocity.x * (1 - Time.fixedDeltaTime * airDrag), _rb.velocity.y);
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x * (1 - Time.fixedDeltaTime * airDrag), _rb.linearVelocity.y);
+    }
+
+    public void SetInputDevice(InputDevice device)
+    {
+        _device = device;
     }
 }
