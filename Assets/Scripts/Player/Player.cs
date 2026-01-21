@@ -17,6 +17,7 @@ public class Player : MonoBehaviour
     [SerializeField] private PhysicsMaterial2D _bounceMaterial;
     [SerializeField] private TextMeshPro _nameText;
     [SerializeField] private SpriteRenderer[] _limbs;
+    [SerializeField] private TrainingAcademy _academy;
 
     #endregion
 
@@ -62,6 +63,14 @@ public class Player : MonoBehaviour
 
     #endregion
 
+    #region Constants
+
+    private const float JumpCooldown = 0.2f;
+    private const float DodgeCooldown = 0.1f;
+    private const float DashCooldown = 0.25f;
+
+    #endregion
+
     #region Private Fields
 
     private string _playerName;
@@ -77,6 +86,9 @@ public class Player : MonoBehaviour
     private bool _jumpInitiated = false;
     private bool _launched = false;
     private bool _attacking = false;
+    private float _lastJumpTime = -1f;
+    private float _lastDodgeTime = -1f;
+    private float _lastDashTime = -1f;
 
     private bool CanMove =>
         _animator.GetCurrentAnimatorStateInfo(0).IsName("idle") ||
@@ -230,6 +242,8 @@ public class Player : MonoBehaviour
 
     public void Launch(Vector2 dir)
     {
+        _academy.OnAgentHit(this.GetComponent<StickAgent>());
+        return;
         _launched = true;
         _rb.gravityScale = 1f;
         _rb.linearVelocity = dir;
@@ -239,9 +253,59 @@ public class Player : MonoBehaviour
 
     #endregion
 
+    #region Public Properties
+
+    public bool IsGrounded => _grounded;
+    public int JumpCount => _jumps;
+    public int DodgeCount => _dodges;
+    public bool IsDodging => _dodging;
+
+    public float AnimationStateIndex
+    {
+        get
+        {
+            if (_animator == null) return 0f;
+
+            var stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
+
+            // Check for dodging (priority 1)
+            if (stateInfo.IsName("dodge"))
+                return 1f;
+
+            // Check for attacks (priority 2+)
+            if (stateInfo.IsName("slight") || stateInfo.IsName("sair"))
+                return 2f; // Side attack
+            if (stateInfo.IsName("nlight") || stateInfo.IsName("nair"))
+                return 3f; // Up attack
+            if (stateInfo.IsName("dlight") || stateInfo.IsName("dair"))
+                return 4f; // Down attack
+
+            // Default: idle/walk/jumping/dashing (0)
+            return 0f;
+        }
+    }
+
+    #endregion
+
     #region Collision
 
     private void OnCollisionEnter2D(Collision2D collision)
+    {
+        CheckGroundCollision(collision);
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        CheckGroundCollision(collision);
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.transform.CompareTag("Ground"))
+            _grounded = false;
+    }
+
+    private void CheckGroundCollision(Collision2D collision)
     {
         if (collision.transform.CompareTag("Ground"))
         {
@@ -251,12 +315,6 @@ public class Player : MonoBehaviour
             _dodges = 3;
             _jumpInitiated = false;
         }
-    }
-
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        if (collision.transform.CompareTag("Ground"))
-            _grounded = false;
     }
 
     #endregion
@@ -274,6 +332,9 @@ public class Player : MonoBehaviour
     {
         _playerName = name;
         _color = color;
+
+        NameChanged(name, name);
+        ColorChanged(color, color);
     }
 
     private void NameChanged(string oldName, string newName)
@@ -324,25 +385,9 @@ public class Player : MonoBehaviour
         int xDir = (_right ? 1 : 0) - (_left ? 1 : 0);
         _animator.SetBool("run", xDir != 0);
 
-        if (_serverJump)
-        {
-            _serverJump = false;
-            if (!((_jumps != 0 || _grounded) && _canJump && !_dodging && !_attacking))
-                return;
+        RunJump();
 
-            _jumpInitiated = true;
-            _animator.SetTrigger("jump");
-            _canJump = false;
-            if (!_grounded) _jumps--;
-        }
-
-        if (_serverFastFall)
-        {
-            _serverFastFall = false;
-            if (_grounded || _dodging || _attacking)
-                return;
-            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, -_maxFallSpeed);
-        }
+        RunFastFall();
 
         _animator.SetBool("inAir", !_grounded);
 
@@ -351,6 +396,8 @@ public class Player : MonoBehaviour
             _serverAttack = false;
             if (_attacking || _dodging)
                 return;
+
+            InitiateAttack();
 
             Vector2 dir = new Vector2(
                 (_right ? 1 : 0) - (_left ? 1 : 0),
@@ -382,8 +429,10 @@ public class Player : MonoBehaviour
 
                 if (dir == Vector2.zero || dir == Vector2.up)
                 {
-                    if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("dodge"))
+                    float timeSinceLastDodge = Time.time - _lastDodgeTime;
+                    if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("dodge") && timeSinceLastDodge >= DodgeCooldown)
                     {
+                        _lastDodgeTime = Time.time;
                         _animator.SetTrigger("dodge");
                         if (dir == Vector2.up) _dodges--;
                         _canRecastDodge = false;
@@ -391,8 +440,13 @@ public class Player : MonoBehaviour
                 }
                 else
                 {
-                    _dashInitiated = _serverDash;
-                    _animator.SetTrigger("dash");
+                    float timeSinceLastDash = Time.time - _lastDashTime;
+                    if (timeSinceLastDash >= DashCooldown)
+                    {
+                        _lastDashTime = Time.time;
+                        _dashInitiated = _serverDash;
+                        _animator.SetTrigger("dash");
+                    }
                 }
             }
 
@@ -406,9 +460,14 @@ public class Player : MonoBehaviour
 
             if (_serverDash && _dodges > 0 && !_attacking)
             {
-                _dodges--;
-                _animator.SetTrigger("dodge");
-                _canRecastDodge = !_serverDash;
+                float timeSinceLastDodge = Time.time - _lastDodgeTime;
+                if (timeSinceLastDodge >= DodgeCooldown)
+                {
+                    _lastDodgeTime = Time.time;
+                    _dodges--;
+                    _animator.SetTrigger("dodge");
+                    _canRecastDodge = !_serverDash;
+                }
             }
         }
 
@@ -437,5 +496,40 @@ public class Player : MonoBehaviour
     public void SetInputDevice(InputDevice device)
     {
         _device = device;
+    }
+
+    private void RunJump()
+    {
+        if (_serverJump)
+        {
+            _serverJump = false;
+            float timeSinceLastJump = Time.time - _lastJumpTime;
+            if (!((_jumps != 0 || _grounded) && _canJump && !_dodging && !_attacking && timeSinceLastJump >= JumpCooldown))
+                return;
+
+            _lastJumpTime = Time.time;
+            _jumpInitiated = true;
+            _animator.SetTrigger("jump");
+            _canJump = false;
+            if (!_grounded) _jumps--;
+        }
+    }
+
+    private void RunFastFall()
+    {
+        if (_serverFastFall)
+        {
+            float timeSinceLastJump = Time.time - _lastJumpTime;
+            _serverFastFall = false;
+            if (_grounded || _dodging || _attacking || timeSinceLastJump < JumpCooldown)
+                return;
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, -_maxFallSpeed);
+        }
+    }
+
+    public void Reset()
+    {
+        ActivateInput();
+        _animator.Play("idle");
     }
 }

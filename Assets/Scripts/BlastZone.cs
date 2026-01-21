@@ -6,15 +6,19 @@ public class BlastZone : MonoBehaviour
 {
     [SerializeField] GameObject particles;
     [SerializeField] float orientation;
+    [SerializeField] TrainingAcademy academy;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.TryGetComponent(out Player player) == false)
             return;
 
-        player.Blast();
+        if (player.TryGetComponent(out StickAgent agent))
+            academy.OnAgentLose(agent);
 
-        StartCoroutine(BlastParticles(player.transform.position));
+        //player.Blast();
+
+        //StartCoroutine(BlastParticles(player.transform.position));
     }
 
     IEnumerator BlastParticles(Vector2 position)

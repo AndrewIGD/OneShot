@@ -22,27 +22,27 @@ public class InputDevice
     private bool _previousFastFall = false;
     private bool _previousAttack = false;
 
-    public bool UpDown { get; private set; }
-    public bool DownDown { get; private set; }
-    public bool LeftDown { get; private set; }
-    public bool RightDown { get; private set; }
-    public bool JumpDown { get; private set; }
-    public bool DashDown { get; private set; }
-    public bool FastFallDown { get; private set; }
-    public bool AttackDown { get; private set; }
+    public bool UpDown { get; protected set; }
+    public bool DownDown { get; protected set; }
+    public bool LeftDown { get; protected set; }
+    public bool RightDown { get; protected set; }
+    public bool JumpDown { get; protected set; }
+    public bool DashDown { get; protected set; }
+    public bool FastFallDown { get; protected set; }
+    public bool AttackDown { get; protected set; }
 
-    public bool UpUp { get; private set; }
-    public bool DownUp { get; private set; }
-    public bool LeftUp { get; private set; }
-    public bool RightUp { get; private set; }
-    public bool JumpUp { get; private set; }
-    public bool DashUp { get; private set; }
-    public bool FastFallUp { get; private set; }
-    public bool AttackUp { get; private set; }
+    public bool UpUp { get; protected set; }
+    public bool DownUp { get; protected set; }
+    public bool LeftUp { get; protected set; }
+    public bool RightUp { get; protected set; }
+    public bool JumpUp { get; protected set; }
+    public bool DashUp { get; protected set; }
+    public bool FastFallUp { get; protected set; }
+    public bool AttackUp { get; protected set; }
 
     public bool Any => Up || Down || Left || Right || Jump || Dash || FastFall || Attack;
 
-    public void Update()
+    public virtual void Update()
     {
         UpDown = Up && !_previousUp;
         DownDown = Down && !_previousDown;
@@ -166,4 +166,27 @@ public class StickAgentInputDevice : InputDevice
     public override bool Dash => _dash;
     public override bool FastFall => _fastFall;
     public override bool Attack => _attack;
+
+    public override void Update()
+    {
+        UpDown = Up;
+        DownDown = Down;
+        LeftDown = Left;
+        RightDown = Right;
+
+        JumpDown = Jump;
+        DashDown = Dash;
+        FastFallDown = FastFall;
+        AttackDown = Attack;
+    
+        UpUp = !Up;
+        DownUp = !Down;
+        LeftUp = !Left;
+        RightUp = !Right;
+
+        JumpUp = !Jump;
+        DashUp = !Dash;
+        FastFallUp = !FastFall;
+        AttackUp = !Attack;
+    }
 }

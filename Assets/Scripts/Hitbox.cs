@@ -19,7 +19,7 @@ public class Hitbox : MonoBehaviour
         coll = GetComponent<BoxCollider2D>();
     }
 
-    [ServerCallback]
+    //[ServerCallback]
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.TryGetComponent(out Player player) == false)
@@ -42,11 +42,13 @@ public class Hitbox : MonoBehaviour
     {
         GameObject particles = Instantiate(this.particles, position, Quaternion.identity);
 
-        NetworkServer.Spawn(particles);
+        //NetworkServer.Spawn(particles);
 
         yield return new WaitForSeconds(3);
 
-        NetworkServer.Destroy(particles);
+        Destroy(particles);
+
+        //NetworkServer.Destroy(particles);
     }
 
     private void Update()
