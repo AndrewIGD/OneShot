@@ -19,6 +19,10 @@ public class Player : MonoBehaviour
     [SerializeField] private SpriteRenderer[] _limbs;
     [SerializeField] private TrainingAcademy _academy;
 
+    public float MovementSpeed => _movementSpeed;
+    public float MaxFallSpeed => _maxFallSpeed;
+    public int MaxJumps => 2;
+
     #endregion
 
     #region Controls
@@ -260,28 +264,28 @@ public class Player : MonoBehaviour
     public int DodgeCount => _dodges;
     public bool IsDodging => _dodging;
 
-    public float AnimationStateIndex
+    public int AnimationStateIndex
     {
         get
         {
-            if (_animator == null) return 0f;
+            if (_animator == null) return 0;
 
             var stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
 
             // Check for dodging (priority 1)
             if (stateInfo.IsName("dodge"))
-                return 1f;
+                return 1;
 
             // Check for attacks (priority 2+)
             if (stateInfo.IsName("slight") || stateInfo.IsName("sair"))
-                return 2f; // Side attack
+                return 2; // Side attack
             if (stateInfo.IsName("nlight") || stateInfo.IsName("nair"))
-                return 3f; // Up attack
+                return 3; // Up attack
             if (stateInfo.IsName("dlight") || stateInfo.IsName("dair"))
-                return 4f; // Down attack
+                return 4; // Down attack
 
             // Default: idle/walk/jumping/dashing (0)
-            return 0f;
+            return 0;
         }
     }
 

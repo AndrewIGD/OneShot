@@ -375,6 +375,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Academy
       objectReference: {fileID: 0}
+    - target: {fileID: 5137132728532941213, guid: 74b950326f4f1604ca7f37da2ac7e079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5974775427367068983, guid: 74b950326f4f1604ca7f37da2ac7e079, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -414,6 +418,10 @@ PrefabInstance:
     - target: {fileID: 5974775427367068983, guid: 74b950326f4f1604ca7f37da2ac7e079, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6658627381538394554, guid: 74b950326f4f1604ca7f37da2ac7e079, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1000
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

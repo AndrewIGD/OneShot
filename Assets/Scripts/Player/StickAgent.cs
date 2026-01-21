@@ -8,12 +8,22 @@ public class StickAgent : Agent
 {
     [SerializeField] private int teamId;
 
-    private const float IdlePenalty = -0.001f;
+    //private const float IdlePenalty = -0.001f;
+
+    private const float CloseDistanceReward = 0.01f;
+    private const float AttackReward = 0.02f;
+    private const float AttackPenalty = -0.01f;
+
+    private float[] AttackRewardDistance = new float[3] { 9f, 5f, 6f };
 
     private StickAgentInputDevice _inputDevice;
     private Player _player;
     private Rigidbody2D _rb;
     private StickAgent _opponentAgent;
+
+    private float distanceToOpponent;
+
+    private bool isAttacking = false;
 
     public override void Initialize()
     {
@@ -37,6 +47,8 @@ public class StickAgent : Agent
     public void Setup(StickAgent otherAgent)
     {
         _opponentAgent = otherAgent;
+
+        distanceToOpponent = Vector2.Distance(transform.position, _opponentAgent.transform.position);
     }
 
     public override void OnEpisodeBegin()
@@ -49,41 +61,28 @@ public class StickAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        sensor.AddObservation(transform.localPosition.x);
-        sensor.AddObservation(transform.localPosition.y);
+        var relativePositionToOpponent = transform.localPosition - _opponentAgent.transform.localPosition;
+        var distanceToOpponent = Vector2.Distance(transform.localPosition, _opponentAgent.transform.localPosition);
+        var relativeVelocityToOpponent = _rb.linearVelocity - _opponentAgent._rb.linearVelocity;
 
-        if (_rb != null)
-        {
-            sensor.AddObservation(_rb.linearVelocity.x);
-            sensor.AddObservation(_rb.linearVelocity.y);
-        }
-        else
-        {
-            sensor.AddObservation(0f);
-            sensor.AddObservation(0f);
-        }
+        sensor.AddObservation(relativePositionToOpponent.x);
+        sensor.AddObservation(relativePositionToOpponent.y);
+
+        sensor.AddObservation(distanceToOpponent);
+
+        sensor.AddObservation(_rb.linearVelocity.x / _player.MovementSpeed);
+        sensor.AddObservation(_rb.linearVelocity.y / _player.MaxFallSpeed);
+
+        sensor.AddObservation(relativeVelocityToOpponent.x / _player.MovementSpeed);
+        sensor.AddObservation(relativeVelocityToOpponent.y / _player.MaxFallSpeed);
 
         sensor.AddObservation(_player.IsGrounded ? 1f : 0f);
-        sensor.AddObservation(_player.JumpCount);
+        sensor.AddObservation(_player.JumpCount / (float)_player.MaxJumps);
         //sensor.AddObservation(_player.DodgeCount);
         sensor.AddObservation(_player.AnimationStateIndex);
 
-        sensor.AddObservation(_opponentAgent.transform.localPosition.x);
-        sensor.AddObservation(_opponentAgent.transform.localPosition.y);
-
-        if (_opponentAgent._rb != null)
-        {
-            sensor.AddObservation(_opponentAgent._rb.linearVelocity.x);
-            sensor.AddObservation(_opponentAgent._rb.linearVelocity.y);
-        }
-        else
-        {
-            sensor.AddObservation(0f);
-            sensor.AddObservation(0f);
-        }
-
         sensor.AddObservation(_opponentAgent._player.IsGrounded ? 1f : 0f);
-        sensor.AddObservation(_opponentAgent._player.JumpCount);
+        sensor.AddObservation(_opponentAgent._player.JumpCount / (float)_opponentAgent._player.MaxJumps);
         //sensor.AddObservation(_opponentAgent._player.DodgeCount);
         sensor.AddObservation(_opponentAgent._player.AnimationStateIndex);
     }
@@ -102,7 +101,49 @@ public class StickAgent : Agent
 
         _inputDevice.Update();
 
-        AddReward(IdlePenalty);
+        float rewardThisStep = 0f;
+
+        var newDistanceToOpponent = Vector2.Distance(transform.position, _opponentAgent.transform.position);
+        if (newDistanceToOpponent < distanceToOpponent)
+        {
+            float closeReward = CloseDistanceReward * (distanceToOpponent - newDistanceToOpponent);
+            AddReward(closeReward);
+            rewardThisStep += closeReward;
+            //Debug.Log($"[StickAgent][Reward] CloseDistanceReward: {closeReward:F4} (distance {distanceToOpponent:F2} -> {newDistanceToOpponent:F2})");
+        }
+
+        distanceToOpponent = newDistanceToOpponent;
+
+        var isAttackingNow = _player.AnimationStateIndex > 0;
+        bool attackStartedThisFrame = isAttackingNow && !isAttacking;
+
+        if (attackStartedThisFrame)
+        {
+            if (distanceToOpponent < AttackRewardDistance[_player.AnimationStateIndex - 2])
+            {
+                AddReward(AttackReward);
+                rewardThisStep += AttackReward;
+                //Debug.Log($"[StickAgent][Reward] AttackReward: {AttackReward:F4} (distance {distanceToOpponent:F2} < {AttackRewardDistance[_player.AnimationStateIndex - 2]})");
+            }
+            else
+            {
+                AddReward(AttackPenalty);
+                rewardThisStep += AttackPenalty;
+                //Debug.Log($"[StickAgent][Reward] AttackPenalty: {AttackPenalty:F4} (distance {distanceToOpponent:F2} >= {AttackRewardDistance})");
+            }
+        }
+
+        isAttacking = isAttackingNow;
+
+        // Uncomment if you want to apply idle penalty and log it
+        //AddReward(IdlePenalty);
+        //rewardThisStep += IdlePenalty;
+        //Debug.Log($"[StickAgent][Reward] IdlePenalty: {IdlePenalty:F4}");
+
+        if (Mathf.Abs(rewardThisStep) > 0f)
+        {
+            //Debug.Log($"[StickAgent][Reward] Total step reward: {rewardThisStep:F4}");
+        }
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -126,5 +167,7 @@ public class StickAgent : Agent
     {
         _rb.linearVelocity = Vector2.zero;
         _player.Reset();
+
+        distanceToOpponent = Vector2.Distance(transform.position, _opponentAgent.transform.position);
     }
 }

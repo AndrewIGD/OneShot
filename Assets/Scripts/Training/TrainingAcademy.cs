@@ -73,8 +73,8 @@ public class TrainingAcademy : MonoBehaviour
     {
         if (agent1 != null && agent2 != null)
         {
-            agent1.EndEpisode();
-            agent2.EndEpisode();
+            agent1.EpisodeInterrupted();
+            agent2.EpisodeInterrupted();
 
             OnEnvironmentReset();
         }
