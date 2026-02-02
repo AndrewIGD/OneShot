@@ -1,0 +1,30 @@
+{
+    "Stick": {
+        "elo": 1200.9985608882907,
+        "checkpoints": [
+            {
+                "steps": 1305,
+                "file_path": "results\\test\\Stick\\Stick-1305.onnx",
+                "reward": 1.2128727845847607,
+                "creation_time": 1769416113.5576453,
+                "auxillary_file_paths": [
+                    "results\\test\\Stick\\Stick-1305.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 1305,
+            "file_path": "results\\test\\Stick.onnx",
+            "reward": 1.2128727845847607,
+            "creation_time": 1769416113.5576453,
+            "auxillary_file_paths": [
+                "results\\test\\Stick\\Stick-1305.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}

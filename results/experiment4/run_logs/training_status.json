@@ -1,0 +1,66 @@
+{
+    "Stick": {
+        "checkpoints": [
+            {
+                "steps": 3499992,
+                "file_path": "results\\experiment4\\Stick\\Stick-3499992.onnx",
+                "reward": 0.7431765398175912,
+                "creation_time": 1769090421.4602416,
+                "auxillary_file_paths": [
+                    "results\\experiment4\\Stick\\Stick-3499992.pt"
+                ]
+            },
+            {
+                "steps": 3999980,
+                "file_path": "results\\experiment4\\Stick\\Stick-3999980.onnx",
+                "reward": 0.2695012698386563,
+                "creation_time": 1769095127.185035,
+                "auxillary_file_paths": [
+                    "results\\experiment4\\Stick\\Stick-3999980.pt"
+                ]
+            },
+            {
+                "steps": 4499993,
+                "file_path": "results\\experiment4\\Stick\\Stick-4499993.onnx",
+                "reward": 0.02575742946646642,
+                "creation_time": 1769099837.48813,
+                "auxillary_file_paths": [
+                    "results\\experiment4\\Stick\\Stick-4499993.pt"
+                ]
+            },
+            {
+                "steps": 4999956,
+                "file_path": "results\\experiment4\\Stick\\Stick-4999956.onnx",
+                "reward": 0.3048961034045874,
+                "creation_time": 1769104551.832416,
+                "auxillary_file_paths": [
+                    "results\\experiment4\\Stick\\Stick-4999956.pt"
+                ]
+            },
+            {
+                "steps": 5000020,
+                "file_path": "results\\experiment4\\Stick\\Stick-5000020.onnx",
+                "reward": 0.3048961034045874,
+                "creation_time": 1769104551.9264178,
+                "auxillary_file_paths": [
+                    "results\\experiment4\\Stick\\Stick-5000020.pt"
+                ]
+            }
+        ],
+        "elo": 1201.6642238281318,
+        "final_checkpoint": {
+            "steps": 5000020,
+            "file_path": "results\\experiment4\\Stick.onnx",
+            "reward": 0.3048961034045874,
+            "creation_time": 1769104551.9264178,
+            "auxillary_file_paths": [
+                "results\\experiment4\\Stick\\Stick-5000020.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}
