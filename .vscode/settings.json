@@ -56,5 +56,8 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "OneShot.sln"
+    "dotnet.defaultSolution": "OneShot.sln",
+    "dotrush.roslyn.projectOrSolutionFiles": [
+        "f:\\Macbook Stuff\\Personal\\Unity\\OneShot\\Assembly-CSharp.csproj"
+    ]
 }

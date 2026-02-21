@@ -13,8 +13,8 @@ public class BlastZone : MonoBehaviour
         if (collision.TryGetComponent(out Player player) == false)
             return;
 
-        if (player.TryGetComponent(out StickAgent agent))
-            academy.OnAgentLose(agent);
+        //if (player.TryGetComponent(out StickAgent agent))
+        //    academy.OnAgentLose(agent);
 
         //player.Blast();
 

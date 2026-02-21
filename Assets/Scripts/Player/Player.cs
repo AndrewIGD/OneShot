@@ -23,6 +23,7 @@ public class Player : MonoBehaviour
     public float MovementSpeed => _movementSpeed;
     public float MaxFallSpeed => _maxFallSpeed;
     public int MaxJumps => 2;
+    public int MaxDodges => 3;
 
     #endregion
 
@@ -251,9 +252,9 @@ public class Player : MonoBehaviour
         _rb.gravityScale = 1f;
         _rb.linearVelocity = dir;
         _rb.sharedMaterial = _bounceMaterial;
-        _animator.SetTrigger("launch");*/
+        _animator.SetTrigger("launch");
 
-        _academy.OnAgentLose(this.GetComponent<StickAgent>());
+        _academy.OnAgentLose(this.GetComponent<StickAgent>());*/
     }
 
     #endregion
@@ -273,20 +274,31 @@ public class Player : MonoBehaviour
 
             var stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
 
-            // Check for dodging (priority 1)
-            if (stateInfo.IsName("dodge"))
+            if (stateInfo.IsName("nlight"))
+                return 0;
+
+            if (stateInfo.IsName("slight"))
                 return 1;
 
-            // Check for attacks (priority 2+)
-            if (stateInfo.IsName("slight") || stateInfo.IsName("sair"))
-                return 2; // Side attack
-            if (stateInfo.IsName("nlight") || stateInfo.IsName("nair"))
-                return 3; // Up attack
-            if (stateInfo.IsName("dlight") || stateInfo.IsName("dair"))
-                return 4; // Down attack
+            if (stateInfo.IsName("dlight"))
+                return 2;
 
-            // Default: idle/walk/jumping/dashing (0)
-            return 0;
+            if (stateInfo.IsName("nair"))
+                return 3;
+
+            if (stateInfo.IsName("sair"))
+                return 4;
+
+            if (stateInfo.IsName("dair"))
+                return 5;
+
+            if (stateInfo.IsName("dash"))
+                return 6;
+
+            if (stateInfo.IsName("dodge"))
+                return 7;
+
+            return -1;
         }
     }
 

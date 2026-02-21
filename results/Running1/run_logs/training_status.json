@@ -1,0 +1,65 @@
+{
+    "Stick": {
+        "checkpoints": [
+            {
+                "steps": 1999983,
+                "file_path": "results\\Running1\\Stick\\Stick-1999983.onnx",
+                "reward": 0.922746860528294,
+                "creation_time": 1771636003.4832096,
+                "auxillary_file_paths": [
+                    "results\\Running1\\Stick\\Stick-1999983.pt"
+                ]
+            },
+            {
+                "steps": 2499980,
+                "file_path": "results\\Running1\\Stick\\Stick-2499980.onnx",
+                "reward": 0.9336591181768612,
+                "creation_time": 1771641608.5152168,
+                "auxillary_file_paths": [
+                    "results\\Running1\\Stick\\Stick-2499980.pt"
+                ]
+            },
+            {
+                "steps": 2999961,
+                "file_path": "results\\Running1\\Stick\\Stick-2999961.onnx",
+                "reward": 0.9338258101445872,
+                "creation_time": 1771647193.8507285,
+                "auxillary_file_paths": [
+                    "results\\Running1\\Stick\\Stick-2999961.pt"
+                ]
+            },
+            {
+                "steps": 3499983,
+                "file_path": "results\\Running1\\Stick\\Stick-3499983.onnx",
+                "reward": 0.9333259942452552,
+                "creation_time": 1771652719.9029036,
+                "auxillary_file_paths": [
+                    "results\\Running1\\Stick\\Stick-3499983.pt"
+                ]
+            },
+            {
+                "steps": 3501190,
+                "file_path": "results\\Running1\\Stick\\Stick-3501190.onnx",
+                "reward": 0.934765792913265,
+                "creation_time": 1771652727.875953,
+                "auxillary_file_paths": [
+                    "results\\Running1\\Stick\\Stick-3501190.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 3501190,
+            "file_path": "results\\Running1\\Stick.onnx",
+            "reward": 0.934765792913265,
+            "creation_time": 1771652727.875953,
+            "auxillary_file_paths": [
+                "results\\Running1\\Stick\\Stick-3501190.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.2.2+cu121"
+    }
+}
