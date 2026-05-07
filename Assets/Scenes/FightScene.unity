@@ -481,7 +481,7 @@ PrefabInstance:
     - target: {fileID: 2063848482297755412, guid: 74b950326f4f1604ca7f37da2ac7e079, type: 3}
       propertyPath: _academy
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 5691156098670036898}
     - target: {fileID: 2063848482297755415, guid: 74b950326f4f1604ca7f37da2ac7e079, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -701,7 +701,7 @@ PrefabInstance:
     - target: {fileID: 7499049622498782448, guid: 74b950326f4f1604ca7f37da2ac7e079, type: 3}
       propertyPath: m_Model
       value: 
-      objectReference: {fileID: 5022602860645237092, guid: a88df32b7526b9e42846ff6fd3963349, type: 3}
+      objectReference: {fileID: 0}
     - target: {fileID: 7499049622498782448, guid: 74b950326f4f1604ca7f37da2ac7e079, type: 3}
       propertyPath: m_BrainParameters.VectorObservationSize
       value: 38

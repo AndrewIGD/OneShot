@@ -5,10 +5,10 @@ public class RunningTrainingAcademy : TrainingAcademy
 {
     [SerializeField] private Transform _targetPosition;
 
-    public static float MaxSpawnDistance = 17f;
+    public static float MaxSpawnDistance = 32f;
 
-    private const float MaxWidth = 15f;
-    private const float MaxHeight = 6f;
+    private const float MaxWidth = 30f;
+    private const float MaxHeight = 10f;
 
     private StickAgent Agent => Agents[0];
 
