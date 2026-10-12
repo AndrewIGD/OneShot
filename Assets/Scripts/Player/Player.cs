@@ -252,9 +252,9 @@ public class Player : MonoBehaviour
         _rb.gravityScale = 1f;
         _rb.linearVelocity = dir;
         _rb.sharedMaterial = _bounceMaterial;
-        _animator.SetTrigger("launch");
+        _animator.SetTrigger("launch");*/
 
-        _academy.OnAgentLose(this.GetComponent<StickAgent>());*/
+        _academy.OnAgentLose(this.GetComponent<StickAgent>());
     }
 
     #endregion

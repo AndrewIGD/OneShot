@@ -81,4 +81,17 @@ public class TrainingAcademy : MonoBehaviour
     {
         return new Vector2(Random.Range(minSpawn.position.x, maxSpawn.position.x), Random.Range(minSpawn.position.y, maxSpawn.position.y));
     }
+
+    public void OnAgentLose(StickAgent agent)
+    {
+        agent.AddReward(-1f);
+        foreach (var a in agents)
+        {
+            if (a != agent)
+            {
+                a.AddReward(1f);
+            }
+        }
+        EndEpisode();
+    }
 }

@@ -75,3 +75,26 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Python / ML-Agents local install
+.venv/
+.python-version
+.mlagents-src/
+__pycache__/
+*.pyc
+
+# ML-Agents training results & logs
+results/
+*.tfevents*
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Credentials & secrets
+*service_account*.json
+*credentials*.json
+*.key

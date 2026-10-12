@@ -14,6 +14,8 @@ public class Hitbox : MonoBehaviour
 
     BoxCollider2D coll;
 
+    public Transform Owner => parent;
+
     private void Awake()
     {
         coll = GetComponent<BoxCollider2D>();

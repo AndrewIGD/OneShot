@@ -14,7 +14,7 @@ public class RunningTrainingAcademy : TrainingAcademy
 
     protected override IEnumerator ResetEnvironmentCoroutine()
     {
-        _targetPosition.position = GetRandomTargetSpawnPosition();
+        _targetPosition.localPosition = GetRandomTargetSpawnPosition();
 
         yield return base.ResetEnvironmentCoroutine();
     }
