@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
+    "com.termway.ide.antigravity": "https://github.com/TermWay/unity-ide-antigravity.git",
     "com.boxqkrtm.ide.cursor": "https://github.com/boxqkrtm/com.unity.ide.cursor.git#fd8ff1fb700caf062eb5cce364c1d0a85f99ebe6",
     "com.unity.2d.animation": "13.0.2",
     "com.unity.2d.pixel-perfect": "5.1.1",
@@ -11,7 +13,6 @@
     "com.unity.collab-proxy": "2.11.2",
     "com.unity.ide.rider": "3.0.38",
     "com.unity.ide.visualstudio": "2.0.26",
-    "com.unity.ide.vscode": "1.2.3",
     "com.unity.inputsystem": "1.17.0",
     "com.unity.ml-agents": "4.0.1",
     "com.unity.multiplayer.center": "1.0.1",

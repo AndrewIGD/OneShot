@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp(*)",
+      "mcp(unityMCP/*)",
+      "mcp(unity-mcp/*)"
+    ]
+  }
+}

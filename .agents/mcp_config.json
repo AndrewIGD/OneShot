@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "unity-mcp": {
+      "command": "C:\\Users\\AndrewIGD\\AppData\\Roaming\\Python\\Python312\\Scripts\\mcp-for-unity.exe",
+      "args": [
+        "--transport",
+        "stdio"
+      ]
+    }
+  }
+}
