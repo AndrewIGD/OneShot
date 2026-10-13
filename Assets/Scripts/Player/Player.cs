@@ -178,7 +178,15 @@ public class Player : MonoBehaviour
 
     private void Respawn()
     {
-        transform.position = GameManager.Instance.GetRandomSpawnPosition();
+        if (_academy != null)
+        {
+            transform.position = _academy.GetRandomSpawnPosition();
+        }
+        else if (GameManager.Instance != null)
+        {
+            transform.position = GameManager.Instance.GetRandomSpawnPosition();
+        }
+
         _rb.linearVelocity = Vector2.zero;
     }
 
@@ -404,6 +412,11 @@ public class Player : MonoBehaviour
 
     private void Awake()
     {
+        if (_academy == null)
+        {
+            _academy = GetComponentInParent<TrainingAcademy>();
+        }
+
         if (Academy.IsInitialized && Academy.Instance.IsCommunicatorOn)
         {
             return;
@@ -650,6 +663,12 @@ public class Player : MonoBehaviour
     public void SetInputDevice(InputDevice device)
     {
         _device = device;
+        _controlling = true;
+    }
+
+    public void SetControlling(bool controlling)
+    {
+        _controlling = controlling;
     }
 
     private void RunJump()

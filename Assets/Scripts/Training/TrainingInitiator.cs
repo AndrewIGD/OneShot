@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 public class TrainingInitiator : MonoBehaviour
 {
     private static TrainingInitiator _instance;
-    private const string FightSceneName = "FightScene";
+    private const string FightSceneName = "FightSceneV2";
 
     private void Awake()
     {
@@ -25,9 +25,9 @@ public class TrainingInitiator : MonoBehaviour
 
     private void LoadFightScene()
     {
-        if (SceneManager.GetActiveScene().name != FightSceneName)
+        var currentScene = SceneManager.GetActiveScene().name;
+        if (currentScene != FightSceneName)
         {
-            Debug.Log("TrainingInitiator: Loading FightScene...");
             SceneManager.LoadScene(FightSceneName);
         }
     }

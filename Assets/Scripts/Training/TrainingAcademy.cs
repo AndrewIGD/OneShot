@@ -34,7 +34,7 @@ public class TrainingAcademy : MonoBehaviour
             _episodeStepCount++;
             if (_episodeStepCount >= maxEpisodeSteps)
             {
-                EndEpisode();
+                InterruptEpisode();
             }
         }
     }
@@ -70,14 +70,25 @@ public class TrainingAcademy : MonoBehaviour
         OnEnvironmentReset();
     }
 
+    protected void InterruptEpisode()
+    {
+        foreach (var agent in agents)
+        {
+            agent.EpisodeInterrupted();
+        }
+
+        OnEnvironmentReset();
+    }
+
     private void ResetAgent(StickAgent agent)
     {
         Vector2 spawnPos = GetRandomSpawnPosition();
         agent.transform.position = spawnPos;
+        agent.Reset();
         agent.OnEpisodeBegin();
     }
 
-    private Vector2 GetRandomSpawnPosition()
+    public Vector2 GetRandomSpawnPosition()
     {
         return new Vector2(Random.Range(minSpawn.position.x, maxSpawn.position.x), Random.Range(minSpawn.position.y, maxSpawn.position.y));
     }

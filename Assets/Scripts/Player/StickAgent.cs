@@ -15,13 +15,11 @@ public abstract class StickAgent : Agent
     protected virtual int ObservationSize => 17;
     protected virtual bool UsesDodgeAction => false;
 
-    /// <summary>For sibling agents (e.g. PvP) to read opponent state without exposing private fields.</summary>
     public Player AgentPlayer => _player;
-
-    /// <summary>For sibling agents (e.g. PvP) to read opponent rigidbody.</summary>
     public Rigidbody2D AgentRigidbody => _rb;
-
     public StickAgent Opponent { get; private set; }
+
+    protected StickAgentInputDevice InputDevice => _inputDevice;
 
     private StickAgentInputDevice _inputDevice;
     private Player _player;
@@ -86,7 +84,6 @@ public abstract class StickAgent : Agent
         bool jump = discreteActions[4] == 1;
         bool attack = discreteActions[5] == 1;
         bool dodge = UsesDodgeAction && discreteActions[6] == 1;
-        //dodge = false; // disabled for now
 
         _inputDevice.SetState(up, down, left, right, jump, dodge, down, attack);
 
@@ -114,7 +111,6 @@ public abstract class StickAgent : Agent
         _player.Reset();
     }
 
-    /// <summary>Pair two fighters so each can observe and reward against the other.</summary>
     public void SetupOpponent(StickAgent opponent)
     {
         Opponent = opponent;

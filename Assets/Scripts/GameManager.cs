@@ -10,7 +10,12 @@ public class GameManager : MonoBehaviour
 
     public Vector2 GetRandomSpawnPosition()
     {
-        return new Vector2(Random.Range(minSpawn.position.x, maxSpawn.position.x), Random.Range(minSpawn.position.y, maxSpawn.position.y));
+        if (minSpawn != null && maxSpawn != null)
+        {
+            return new Vector2(Random.Range(minSpawn.position.x, maxSpawn.position.x), Random.Range(minSpawn.position.y, maxSpawn.position.y));
+        }
+
+        return Vector2.zero;
     }
 
     private void Start()
