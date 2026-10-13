@@ -295,6 +295,7 @@ public class Player : MonoBehaviour
 
     public void Launch(Vector2 dir)
     {
+        _academy.OnAgentLose(GetComponent<StickAgent>());
     }
 
     public void ResetStamina()

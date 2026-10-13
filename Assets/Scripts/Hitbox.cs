@@ -13,6 +13,8 @@ public class Hitbox : MonoBehaviour
     private List<Player> _hit = new List<Player>();
     private BoxCollider2D _coll;
 
+    public Transform Owner => parent;
+
     private void Awake()
     {
         _coll = GetComponent<BoxCollider2D>();

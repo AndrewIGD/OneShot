@@ -1233,8 +1233,6 @@ GameObject:
   - component: {fileID: 6714983081698360085}
   - component: {fileID: 1427288241}
   - component: {fileID: 6714983081698360074}
-  - component: {fileID: 750641310694195435}
-  - component: {fileID: 6736988359193898328}
   - component: {fileID: 2992029721558278382}
   m_Layer: 6
   m_Name: Player
@@ -1403,38 +1401,6 @@ MonoBehaviour:
   - {fileID: 6714983081629995649}
   - {fileID: 6714983083583465538}
   _academy: {fileID: 0}
---- !u!114 &750641310694195435
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6714983081698360078}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9d66c73496f83e34bb777244117926db, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::StickAgent
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  teamId: 0
---- !u!114 &6736988359193898328
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6714983081698360078}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.DecisionRequester
-  DecisionPeriod: 1
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 1
 --- !u!114 &2992029721558278382
 MonoBehaviour:
   m_ObjectHideFlags: 0

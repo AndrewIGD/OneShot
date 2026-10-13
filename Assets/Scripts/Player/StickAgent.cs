@@ -12,14 +12,25 @@ public abstract class StickAgent : Agent
 
     protected Player Player => _player;
     protected Rigidbody2D Rb => _rb;
+    protected virtual int ObservationSize => 17;
+    protected virtual bool UsesDodgeAction => false;
+
+    /// <summary>For sibling agents (e.g. PvP) to read opponent state without exposing private fields.</summary>
+    public Player AgentPlayer => _player;
+
+    /// <summary>For sibling agents (e.g. PvP) to read opponent rigidbody.</summary>
+    public Rigidbody2D AgentRigidbody => _rb;
+
+    public StickAgent Opponent { get; private set; }
 
     private StickAgentInputDevice _inputDevice;
     private Player _player;
     private Rigidbody2D _rb;
-    private float[] _observations = new float[40];
+    private float[] _observations;
 
     public override void Initialize()
     {
+        _observations = new float[ObservationSize];
         _inputDevice = new StickAgentInputDevice();
         _player = GetComponent<Player>();
         _rb = GetComponent<Rigidbody2D>();
@@ -55,6 +66,7 @@ public abstract class StickAgent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
+        System.Array.Clear(_observations, 0, _observations.Length);
         GatherObservations();
 
         foreach (var observation in _observations)
@@ -73,7 +85,8 @@ public abstract class StickAgent : Agent
         bool up = discreteActions[3] == 1;
         bool jump = discreteActions[4] == 1;
         bool attack = discreteActions[5] == 1;
-        bool dodge = discreteActions[6] == 1;
+        bool dodge = UsesDodgeAction && discreteActions[6] == 1;
+        //dodge = false; // disabled for now
 
         _inputDevice.SetState(up, down, left, right, jump, dodge, down, attack);
 
@@ -92,6 +105,23 @@ public abstract class StickAgent : Agent
             return;
         }
 
+        WriteHeuristicActions(discreteActions, keyboard);
+    }
+
+    public virtual void Reset()
+    {
+        _rb.linearVelocity = Vector2.zero;
+        _player.Reset();
+    }
+
+    /// <summary>Pair two fighters so each can observe and reward against the other.</summary>
+    public void SetupOpponent(StickAgent opponent)
+    {
+        Opponent = opponent;
+    }
+
+    protected virtual void WriteHeuristicActions(ActionSegment<int> discreteActions, Keyboard keyboard)
+    {
         discreteActions[0] = keyboard.sKey.isPressed ? 1 : 0; 
         discreteActions[1] = keyboard.aKey.isPressed ? 1 : 0; 
         discreteActions[2] = keyboard.dKey.isPressed ? 1 : 0; 
@@ -99,12 +129,6 @@ public abstract class StickAgent : Agent
         discreteActions[4] = keyboard.spaceKey.isPressed ? 1 : 0; 
         discreteActions[5] = keyboard.slashKey.isPressed ? 1 : 0; 
         discreteActions[6] = keyboard.rightShiftKey.isPressed ? 1 : 0;
-    }
-
-    public void Reset()
-    {
-        _rb.linearVelocity = Vector2.zero;
-        _player.Reset();
     }
 
     protected abstract void GatherObservations();
