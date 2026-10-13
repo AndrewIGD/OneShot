@@ -8,7 +8,7 @@ public abstract class StickAgent : Agent
 {
     [SerializeField] private int teamId;
 
-    protected float[] Observations => observations;
+    protected float[] Observations => _observations;
 
     protected Player Player => _player;
     protected Rigidbody2D Rb => _rb;
@@ -16,20 +16,7 @@ public abstract class StickAgent : Agent
     private StickAgentInputDevice _inputDevice;
     private Player _player;
     private Rigidbody2D _rb;
-
-    // +2 = relative velocity to opponent
-    // +1 = distance to opponent
-    // +2 = own velocity
-    // +2 = relative velocity to opponent
-    // +1 = is grounded
-    // +1 = jump count
-    // +1 = dodge count
-    // +1 = direction facing
-    // +8 = attack observations (nlight, slight, dlight, nair, sair, dair, dash, dodge)
-    // = 19
-    // multiply by 2 for own + opponent observations
-    // = 38
-    private float[] observations = new float[38];
+    private float[] _observations = new float[40];
 
     public override void Initialize()
     {
@@ -48,6 +35,12 @@ public abstract class StickAgent : Agent
         }
 
         _player.SetInputDevice(_inputDevice);
+
+        if (TryGetComponent(out DecisionRequester decisionRequester))
+        {
+            decisionRequester.DecisionPeriod = 2;
+            decisionRequester.TakeActionsBetweenDecisions = true;
+        }
     }
 
     public override void OnEpisodeBegin()
@@ -56,14 +49,18 @@ public abstract class StickAgent : Agent
         {
             _rb.linearVelocity = Vector2.zero;
         }
+
+        _player.ResetStamina();
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
         GatherObservations();
 
-        foreach (float o in observations)
-            sensor.AddObservation(o);
+        foreach (var observation in _observations)
+        {
+            sensor.AddObservation(observation);
+        }
     }
 
     public override void OnActionReceived(ActionBuffers actions)

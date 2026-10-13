@@ -11,7 +11,7 @@ public class TrainingModeChecker
 
     private static void InitializeTrainingModeChecker()
     {
-        GameObject checkerObject = new GameObject("TrainingModeChecker_Temp");
+        var checkerObject = new GameObject("TrainingModeChecker_Temp");
         checkerObject.AddComponent<TrainingModeCheckerComponent>();
         Object.DontDestroyOnLoad(checkerObject);
     }
@@ -27,7 +27,7 @@ public class TrainingModeChecker
         {
             if (Academy.IsInitialized && Academy.Instance.IsCommunicatorOn)
             {
-                Debug.Log("TrainingModeChecker: Detected training mode. Spawning TrainingInitiator...");
+                OnTrainingModeConfirmed();
                 SpawnTrainingInitiator();
             }
             else
@@ -43,7 +43,7 @@ public class TrainingModeChecker
 
             if (Academy.IsInitialized && Academy.Instance.IsCommunicatorOn)
             {
-                Debug.Log("TrainingModeChecker: Detected training mode (delayed check). Spawning TrainingInitiator...");
+                OnTrainingModeConfirmed();
                 SpawnTrainingInitiator();
             }
             else
@@ -52,11 +52,18 @@ public class TrainingModeChecker
             }
         }
 
+        private void OnTrainingModeConfirmed()
+        {
+            FrameRateConfigurator.ApplyFrameRateSettings();
+            AudioListener.volume = 0f;
+            AudioListener.pause = true;
+        }
+
         private void SpawnTrainingInitiator()
         {
-            GameObject initiatorObject = new GameObject("TrainingInitiator");
+            var initiatorObject = new GameObject("TrainingInitiator");
             initiatorObject.AddComponent<TrainingInitiator>();
-            
+
             Destroy(gameObject);
         }
     }

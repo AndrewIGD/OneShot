@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using System.Collections;
+using Unity.MLAgents;
 
 public class Player : MonoBehaviour
 {
@@ -19,11 +20,42 @@ public class Player : MonoBehaviour
     [SerializeField] private TextMeshPro _nameText;
     [SerializeField] private SpriteRenderer[] _limbs;
     [SerializeField] private TrainingAcademy _academy;
+    [SerializeField] private float _staminaRegenRate = 0.25f;
+    [SerializeField] private Vector3 _staminaBarOffset = new Vector3(0f, 1.8f, 0f);
 
     public float MovementSpeed => _movementSpeed;
     public float MaxFallSpeed => _maxFallSpeed;
     public int MaxJumps => 2;
     public int MaxDodges => 3;
+    public float Stamina => _stamina;
+
+    public float StaminaMultiplier
+    {
+        get
+        {
+            if (_stamina >= 0.999f)
+            {
+                return 1.2f;
+            }
+
+            if (_stamina >= 0.799f)
+            {
+                return 1.0f;
+            }
+
+            if (_stamina >= 0.599f)
+            {
+                return 0.8f;
+            }
+
+            if (_stamina >= 0.399f)
+            {
+                return 0.6f;
+            }
+
+            return 0.4f;
+        }
+    }
 
     #endregion
 
@@ -74,6 +106,20 @@ public class Player : MonoBehaviour
     private const float JumpCooldown = 0.2f;
     private const float DodgeCooldown = 0.1f;
     private const float DashCooldown = 0.25f;
+    private const float MinStamina = 0.2f;
+    private const float MaxStamina = 1.0f;
+    private const float StaminaStep = 0.2f;
+
+    private static readonly int NLightHash = Animator.StringToHash("nlight");
+    private static readonly int SLightHash = Animator.StringToHash("slight");
+    private static readonly int DLightHash = Animator.StringToHash("dlight");
+    private static readonly int NAirHash = Animator.StringToHash("nair");
+    private static readonly int SAirHash = Animator.StringToHash("sair");
+    private static readonly int DAirHash = Animator.StringToHash("dair");
+    private static readonly int DashHash = Animator.StringToHash("dash");
+    private static readonly int DodgeHash = Animator.StringToHash("dodge");
+    private static readonly int IdleHash = Animator.StringToHash("idle");
+    private static readonly int RunHash = Animator.StringToHash("run");
 
     #endregion
 
@@ -95,10 +141,17 @@ public class Player : MonoBehaviour
     private float _lastJumpTime = -1f;
     private float _lastDodgeTime = -1f;
     private float _lastDashTime = -1f;
+    private float _stamina = 1.0f;
+    private StaminaBar _staminaBar;
 
-    private bool CanMove =>
-        _animator.GetCurrentAnimatorStateInfo(0).IsName("idle") ||
-        _animator.GetCurrentAnimatorStateInfo(0).IsName("run");
+    private bool CanMove
+    {
+        get
+        {
+            var stateHash = _animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+            return stateHash == IdleHash || stateHash == RunHash;
+        }
+    }
 
     #endregion
 
@@ -111,7 +164,15 @@ public class Player : MonoBehaviour
 
     #region Animator Methods
 
-    private void PlaySound(int id) => _sounds[id].Play();
+    private void PlaySound(int id)
+    {
+        if (AudioListener.pause || AudioListener.volume <= 0f)
+        {
+            return;
+        }
+
+        _sounds[id].Play();
+    }
 
     private void EnableJump() => _canJump = true;
 
@@ -136,24 +197,13 @@ public class Player : MonoBehaviour
         StopAttack();
         transform.right = Vector2.right;
         _canJump = true;
-
-        // Animator reset (if needed, uncomment)
-        /*
-        _animator.SetBool("run", false);
-        _animator.SetBool("dash", false);
-        _animator.SetBool("jump", false);
-        _animator.SetBool("inAir", false);
-        _animator.SetBool("dodge", false);
-        _animator.SetBool("side", false);
-        _animator.SetBool("up", false);
-        _animator.SetBool("down", false);
-        */
+        _stamina = MaxStamina;
+        _animator.speed = StaminaMultiplier;
     }
 
     private void ApplyDashSpeed()
     {
-        _rb.linearVelocity = new Vector2((transform.eulerAngles.y > 90 ? -1 : 1) * _dashSpeed, _rb.linearVelocity.y);
-        // _animator.SetBool("dash", false);
+        _rb.linearVelocity = new Vector2((transform.eulerAngles.y > 90 ? -1 : 1) * _dashSpeed * StaminaMultiplier * StaminaMultiplier, _rb.linearVelocity.y);
     }
 
     private void CancelHorizontalMomentum()
@@ -182,7 +232,7 @@ public class Player : MonoBehaviour
         }
 
         _dodging = true;
-        // _animator.SetBool("dodge", false);
+        _animator.speed = 1f;
         gameObject.layer = LayerMask.NameToLayer("PlayerNoHit");
     }
 
@@ -196,13 +246,13 @@ public class Player : MonoBehaviour
     private void StopDodge()
     {
         _dodging = false;
+        _animator.speed = StaminaMultiplier;
         gameObject.layer = LayerMask.NameToLayer("Player");
     }
 
     private void ApplyJumpHeight()
     {
         _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, _jumpHeight);
-        // _animator.SetBool("jump", false);
         _dashInitiated = false;
         _jumpInitiated = true;
         _canJump = true;
@@ -210,9 +260,6 @@ public class Player : MonoBehaviour
 
     private void InitiateAttack()
     {
-        // _animator.SetBool("side", false);
-        // _animator.SetBool("up", false);
-        // _animator.SetBool("down", false);
         _attacking = true;
         _dashInitiated = false;
         _jumpInitiated = false;
@@ -248,13 +295,12 @@ public class Player : MonoBehaviour
 
     public void Launch(Vector2 dir)
     {
-        /*_launched = true;
-        _rb.gravityScale = 1f;
-        _rb.linearVelocity = dir;
-        _rb.sharedMaterial = _bounceMaterial;
-        _animator.SetTrigger("launch");
+    }
 
-        _academy.OnAgentLose(this.GetComponent<StickAgent>());*/
+    public void ResetStamina()
+    {
+        _stamina = MaxStamina;
+        _animator.speed = StaminaMultiplier;
     }
 
     #endregion
@@ -270,33 +316,47 @@ public class Player : MonoBehaviour
     {
         get
         {
-            if (_animator == null) return 0;
+            var stateHash = _animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
 
-            var stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
-
-            if (stateInfo.IsName("nlight"))
+            if (stateHash == NLightHash)
+            {
                 return 0;
+            }
 
-            if (stateInfo.IsName("slight"))
+            if (stateHash == SLightHash)
+            {
                 return 1;
+            }
 
-            if (stateInfo.IsName("dlight"))
+            if (stateHash == DLightHash)
+            {
                 return 2;
+            }
 
-            if (stateInfo.IsName("nair"))
+            if (stateHash == NAirHash)
+            {
                 return 3;
+            }
 
-            if (stateInfo.IsName("sair"))
+            if (stateHash == SAirHash)
+            {
                 return 4;
+            }
 
-            if (stateInfo.IsName("dair"))
+            if (stateHash == DAirHash)
+            {
                 return 5;
+            }
 
-            if (stateInfo.IsName("dash"))
+            if (stateHash == DashHash)
+            {
                 return 6;
+            }
 
-            if (stateInfo.IsName("dodge"))
+            if (stateHash == DodgeHash)
+            {
                 return 7;
+            }
 
             return -1;
         }
@@ -313,18 +373,23 @@ public class Player : MonoBehaviour
 
     private void OnCollisionStay2D(Collision2D collision)
     {
-        CheckGroundCollision(collision);
+        if (!_grounded)
+        {
+            CheckGroundCollision(collision);
+        }
     }
 
     private void OnCollisionExit2D(Collision2D collision)
     {
-        if (collision.transform.CompareTag("Ground"))
+        if (collision.collider.CompareTag("Ground"))
+        {
             _grounded = false;
+        }
     }
 
     private void CheckGroundCollision(Collision2D collision)
     {
-        if (collision.transform.CompareTag("Ground"))
+        if (collision.collider.CompareTag("Ground"))
         {
             _grounded = true;
             _canJump = true;
@@ -336,10 +401,24 @@ public class Player : MonoBehaviour
 
     #endregion
 
+    private void Awake()
+    {
+        if (Academy.IsInitialized && Academy.Instance.IsCommunicatorOn)
+        {
+            return;
+        }
+
+        var barObject = new GameObject("StaminaBar");
+        barObject.transform.SetParent(transform);
+        _staminaBar = barObject.AddComponent<StaminaBar>();
+        _staminaBar.Initialize(this, _staminaBarOffset);
+    }
+
     private void Start()
     {
         _rb = GetComponent<Rigidbody2D>();
         _animator = GetComponent<Animator>();
+        _animator.updateMode = AnimatorUpdateMode.Fixed;
         _gravity = _rb.gravityScale;
 
         Camera.main.GetComponent<CameraFollow>().AddPlayer(this);
@@ -395,11 +474,58 @@ public class Player : MonoBehaviour
             transform.right = -_rb.linearVelocity;
             return;
         }
+    }
+
+    private void FixedUpdate()
+    {
+        HandleInput();
+
+        if (_launched)
+        {
+            return;
+        }
+
+        _rb.gravityScale = _dodging ? 0 : _gravity;
+        if (_dodging)
+        {
+            _animator.speed = 1f;
+            return;
+        }
+
+        if (_rb.linearVelocity.y < -_maxFallSpeed)
+        {
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, -_maxFallSpeed);
+        }
+
+        if (!_grounded)
+        {
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x * (1 - Time.fixedDeltaTime * _airDrag), _rb.linearVelocity.y);
+        }
 
         if (!_controlling)
+        {
             return;
+        }
 
-        int xDir = (_right ? 1 : 0) - (_left ? 1 : 0);
+        var stateHash = _animator.GetCurrentAnimatorStateInfo(0).shortNameHash;
+        var isDashing = _dashInitiated || stateHash == DashHash;
+        var isDodging = _dodging || stateHash == DodgeHash;
+
+        if (!_attacking && !isDashing && !isDodging && _stamina < MaxStamina)
+        {
+            _stamina = Mathf.Min(MaxStamina, _stamina + _staminaRegenRate * Time.fixedDeltaTime);
+        }
+
+        if (isDodging)
+        {
+            _animator.speed = 1f;
+        }
+        else
+        {
+            _animator.speed = StaminaMultiplier;
+        }
+
+        var xDir = (_right ? 1 : 0) - (_left ? 1 : 0);
         _animator.SetBool("run", xDir != 0);
 
         RunJump();
@@ -412,52 +538,71 @@ public class Player : MonoBehaviour
         {
             _serverAttack = false;
             if (_attacking || _dodging)
+            {
                 return;
+            }
+
+            _stamina = Mathf.Max(MinStamina, _stamina - StaminaStep);
+            _animator.speed = StaminaMultiplier;
 
             InitiateAttack();
 
-            Vector2 dir = new Vector2(
+            var dir = new Vector2(
                 (_right ? 1 : 0) - (_left ? 1 : 0),
                 (_up ? 1 : 0) - (_down ? 1 : 0)
             );
 
             if (dir.x != 0)
+            {
                 _animator.SetTrigger("side");
+            }
             else if (dir.y < 0)
+            {
                 _animator.SetTrigger("down");
+            }
             else
+            {
                 _animator.SetTrigger("up");
+            }
 
             if (xDir != 0)
+            {
                 transform.eulerAngles = new Vector3(0, xDir > 0 ? 0 : 180, 0);
+            }
         }
 
         if (_dashInitiated)
+        {
             return;
+        }
 
         if (_grounded && !_jumpInitiated && !_attacking)
         {
             if (_serverDash)
             {
-                Vector2 dir = new Vector2(
+                var dir = new Vector2(
                     (_right ? 1 : 0) - (_left ? 1 : 0),
                     (_up ? 1 : 0) - (_down ? 1 : 0)
                 );
 
                 if (dir == Vector2.zero || dir == Vector2.up)
                 {
-                    float timeSinceLastDodge = Time.time - _lastDodgeTime;
-                    if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("dodge") && timeSinceLastDodge >= DodgeCooldown)
+                    var timeSinceLastDodge = Time.time - _lastDodgeTime;
+                    if (stateHash != DodgeHash && timeSinceLastDodge >= DodgeCooldown)
                     {
                         _lastDodgeTime = Time.time;
+                        _animator.speed = 1f;
                         _animator.SetTrigger("dodge");
-                        if (dir == Vector2.up) _dodges--;
+                        if (dir == Vector2.up)
+                        {
+                            _dodges--;
+                        }
                         _canRecastDodge = false;
                     }
                 }
                 else
                 {
-                    float timeSinceLastDash = Time.time - _lastDashTime;
+                    var timeSinceLastDash = Time.time - _lastDashTime;
                     if (timeSinceLastDash >= DashCooldown)
                     {
                         _lastDashTime = Time.time;
@@ -468,20 +613,25 @@ public class Player : MonoBehaviour
             }
 
             if (!_dodging)
-                _rb.linearVelocity = new Vector2(xDir * _movementSpeed, _rb.linearVelocity.y);
+            {
+                _rb.linearVelocity = new Vector2(xDir * _movementSpeed * StaminaMultiplier, _rb.linearVelocity.y);
+            }
         }
         else if ((_canRecastDodge || !_dodging) && !_grounded)
         {
             if (!_dodging)
-                _rb.AddForce(new Vector2(xDir * _airAcceleration * Time.deltaTime, 0));
+            {
+                _rb.AddForce(new Vector2(xDir * _airAcceleration * Time.fixedDeltaTime, 0));
+            }
 
             if (_serverDash && _dodges > 0 && !_attacking)
             {
-                float timeSinceLastDodge = Time.time - _lastDodgeTime;
+                var timeSinceLastDodge = Time.time - _lastDodgeTime;
                 if (timeSinceLastDodge >= DodgeCooldown)
                 {
                     _lastDodgeTime = Time.time;
                     _dodges--;
+                    _animator.speed = 1f;
                     _animator.SetTrigger("dodge");
                     _canRecastDodge = !_serverDash;
                 }
@@ -491,23 +641,9 @@ public class Player : MonoBehaviour
         _serverDash = false;
 
         if (xDir != 0 && !_dodging && !_attacking)
+        {
             transform.eulerAngles = new Vector3(0, xDir > 0 ? 0 : 180, 0);
-    }
-
-    private void FixedUpdate()
-    {
-        if (_launched)
-            return;
-
-        _rb.gravityScale = _dodging ? 0 : _gravity;
-        if (_dodging)
-            return;
-
-        if (_rb.linearVelocity.y < -_maxFallSpeed)
-            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, -_maxFallSpeed);
-
-        if (!_grounded)
-            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x * (1 - Time.fixedDeltaTime * _airDrag), _rb.linearVelocity.y);
+        }
     }
 
     public void SetInputDevice(InputDevice device)
@@ -520,15 +656,20 @@ public class Player : MonoBehaviour
         if (_serverJump)
         {
             _serverJump = false;
-            float timeSinceLastJump = Time.time - _lastJumpTime;
+            var timeSinceLastJump = Time.time - _lastJumpTime;
             if (!((_jumps != 0 || _grounded) && _canJump && !_dodging && !_attacking && timeSinceLastJump >= JumpCooldown))
+            {
                 return;
+            }
 
             _lastJumpTime = Time.time;
             _jumpInitiated = true;
             _animator.SetTrigger("jump");
             _canJump = false;
-            if (!_grounded) _jumps--;
+            if (!_grounded)
+            {
+                _jumps--;
+            }
         }
     }
 
@@ -536,10 +677,13 @@ public class Player : MonoBehaviour
     {
         if (_serverFastFall)
         {
-            float timeSinceLastJump = Time.time - _lastJumpTime;
+            var timeSinceLastJump = Time.time - _lastJumpTime;
             _serverFastFall = false;
             if (_grounded || _dodging || _attacking || timeSinceLastJump < JumpCooldown)
+            {
                 return;
+            }
+
             _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, -_maxFallSpeed);
         }
     }

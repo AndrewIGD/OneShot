@@ -4,7 +4,7 @@ public class RunningStickAgent : StickAgent
 {
     [SerializeField] private Transform _targetPosition;
 
-    private float[] attackObservations = new float[8];
+    private float[] _attackObservations = new float[8];
 
     protected override void GatherObservations()
     {
@@ -26,23 +26,24 @@ public class RunningStickAgent : StickAgent
         Observations[9] = Player.DodgeCount / (float)Player.MaxDodges;
         Observations[10] = Player.transform.localEulerAngles.y > 90f ? 1f : 0f;
 
-        // Attack observations for self
-        GetAttackObservationsArray(attackObservations, Player.AnimationStateIndex);
+        GetAttackObservationsArray(_attackObservations, Player.AnimationStateIndex);
 
-        for (int i = 0; i < 8; i++)
+        for (var i = 0; i < 8; i++)
         {
-            Observations[11 + i] = attackObservations[i];
+            Observations[11 + i] = _attackObservations[i];
         }
+
+        Observations[19] = Player.Stamina;
     }
 
     protected override void AddActionRewards()
     {
-        AddReward(-0.005f);
+        AddReward(-0.25f * Time.fixedDeltaTime);
     }
 
     private void GetAttackObservationsArray(float[] attackObservations, int animationStateIndex)
     {
-        for (int i = 0; i < 8; i++)
+        for (var i = 0; i < 8; i++)
         {
             attackObservations[i] = animationStateIndex == i ? 1f : 0f;
         }

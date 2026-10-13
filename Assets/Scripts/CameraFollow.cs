@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Unity.MLAgents;
+
 public class CameraFollow : MonoBehaviour
 {
     [SerializeField] private float updateInterval = 1;
@@ -31,13 +33,23 @@ public class CameraFollow : MonoBehaviour
     private void Start()
     {
         camera = Camera.main;
+
+        if (Academy.IsInitialized && Academy.Instance.IsCommunicatorOn)
+        {
+            camera.enabled = false;
+        }
     }
 
     private void Update()
     {
-        for(int i = 0;i<_characters.Count;i++)
+        if (Academy.IsInitialized && Academy.Instance.IsCommunicatorOn)
         {
-            if(_characters[i] == null)
+            return;
+        }
+
+        for (var i = 0; i < _characters.Count; i++)
+        {
+            if (_characters[i] == null)
             {
                 _characters.RemoveAt(i);
                 _rbs.RemoveAt(i);
@@ -46,7 +58,9 @@ public class CameraFollow : MonoBehaviour
         }
 
         if (_characters.Count == 0)
+        {
             return;
+        }
 
         Vector2 startPosition = transform.position;
 
