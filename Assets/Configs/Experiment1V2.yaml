@@ -32,8 +32,8 @@ behaviors:
       initial_elo: 1200.0
 
 env_settings:
-  env_path: "F:/Macbook Stuff/Personal/Unity/OneShotBuild/IGDStickBrawlers.exe"
-  num_envs: 6  # Number of parallel Unity instances (increase for more training throughput)
+  env_path: "Builds/Mac/oneshot.app"
+  num_envs: 12  # Number of parallel Unity instances (increase for more training throughput)
   
 
 engine_settings:
@@ -46,4 +46,4 @@ engine_settings:
   no_graphics: false
 
 torch_settings:
-  device: cuda  # Use "cuda" for GPU, "cpu" for CPU, or "cuda:0" for specific GPU
+  device: cpu  # Use "cuda" for GPU, "cpu" for CPU, or "cuda:0" for specific GPU

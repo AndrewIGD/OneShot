@@ -2,11 +2,6 @@ using UnityEngine;
 using Unity.MLAgents.Actuators;
 using UnityEngine.InputSystem;
 
-/// <summary>
-/// PvP stick fighter: observations and rewards vs <see cref="_opponentAgent"/>.
-/// Assign the other player's <see cref="StickAgent"/> in the inspector on both agents (cross-reference).
-/// Observations follow the legacy layout (17 floats) then zero padding to match scenes using VectorObservationSize 38.
-/// </summary>
 public class FightingAgent : StickAgent
 {
     [SerializeField] private StickAgent _opponentAgent;
@@ -19,45 +14,35 @@ public class FightingAgent : StickAgent
 
     private static readonly float[] AttackRewardDistance = { 9f, 5f, 6f };
 
-    private readonly float[] attackObservationsSelf = new float[3];
-    private readonly float[] attackObservationsOpponent = new float[3];
+    private readonly float[] _attackObservationsSelf = new float[3];
+    private readonly float[] _attackObservationsOpponent = new float[3];
 
-    private float distanceToOpponent;
-    private bool isAttacking;
+    private float _distanceToOpponent;
+    private bool _isAttacking;
 
     private void Awake()
     {
-        if (_opponentAgent != null)
-        {
-            SetupOpponent(_opponentAgent);
-        }
+        PairOpponent();
     }
 
     public override void OnEpisodeBegin()
     {
         base.OnEpisodeBegin();
-        isAttacking = false;
-        if (Opponent != null)
-        {
-            distanceToOpponent = Vector2.Distance(transform.position, Opponent.transform.position);
-        }
+        _isAttacking = false;
+        PairOpponent();
+        _distanceToOpponent = Vector2.Distance(transform.position, Opponent.transform.position);
     }
 
     public override void Reset()
     {
         base.Reset();
-        if (Opponent != null)
-        {
-            distanceToOpponent = Vector2.Distance(transform.position, Opponent.transform.position);
-        }
+        PairOpponent();
+        _distanceToOpponent = Vector2.Distance(transform.position, Opponent.transform.position);
     }
 
     protected override void GatherObservations()
     {
-        if (Opponent == null)
-        {
-            return;
-        }
+        PairOpponent();
 
         var oppRb = Opponent.AgentRigidbody;
         var oppPlayer = OpponentPlayer;
@@ -66,7 +51,7 @@ public class FightingAgent : StickAgent
         var distanceToOpp = Vector2.Distance(transform.localPosition, Opponent.transform.localPosition);
         var relativeVelocityToOpponent = Rb.linearVelocity - oppRb.linearVelocity;
 
-        int i = 0;
+        var i = 0;
         Observations[i++] = relativePositionToOpponent.x / DistanceNormalizationFactor;
         Observations[i++] = relativePositionToOpponent.y / DistanceNormalizationFactor;
         Observations[i++] = distanceToOpp / DistanceNormalizationFactor;
@@ -77,9 +62,9 @@ public class FightingAgent : StickAgent
         Observations[i++] = Player.IsGrounded ? 1f : 0f;
         Observations[i++] = Player.JumpCount / (float)Player.MaxJumps;
 
-        GetAttackObservationsArray(attackObservationsSelf, Player.AnimationStateIndex);
+        GetAttackObservationsArray(_attackObservationsSelf, Player.AnimationStateIndex);
 
-        foreach (float v in attackObservationsSelf)
+        foreach (var v in _attackObservationsSelf)
         {
             Observations[i++] = v;
         }
@@ -87,9 +72,9 @@ public class FightingAgent : StickAgent
         Observations[i++] = oppPlayer.IsGrounded ? 1f : 0f;
         Observations[i++] = oppPlayer.JumpCount / (float)oppPlayer.MaxJumps;
 
-        GetAttackObservationsArray(attackObservationsOpponent, oppPlayer.AnimationStateIndex);
+        GetAttackObservationsArray(_attackObservationsOpponent, oppPlayer.AnimationStateIndex);
 
-        foreach (float v in attackObservationsOpponent)
+        foreach (var v in _attackObservationsOpponent)
         {
             Observations[i++] = v;
         }
@@ -99,13 +84,8 @@ public class FightingAgent : StickAgent
 
     protected override void AddActionRewards()
     {
-        if (Opponent == null)
-        {
-            return;
-        }
-
         var newDistanceToOpponent = Vector2.Distance(transform.position, Opponent.transform.position);
-        float distanceDelta = distanceToOpponent - newDistanceToOpponent;
+        var distanceDelta = _distanceToOpponent - newDistanceToOpponent;
 
         if (distanceDelta > 0f)
         {
@@ -116,16 +96,16 @@ public class FightingAgent : StickAgent
             AddReward(DistancePenalty * Mathf.Abs(distanceDelta));
         }
 
-        distanceToOpponent = newDistanceToOpponent;
+        _distanceToOpponent = newDistanceToOpponent;
 
         var isAttackingNow = Player.AnimationStateIndex >= 2f;
-        bool attackStartedThisFrame = isAttackingNow && !isAttacking;
+        var attackStartedThisFrame = isAttackingNow && !_isAttacking;
 
         if (attackStartedThisFrame)
         {
-            int attackIndex = Mathf.Clamp((int)Player.AnimationStateIndex - 2, 0, AttackRewardDistance.Length - 1);
+            var attackIndex = Mathf.Clamp((int)Player.AnimationStateIndex - 2, 0, AttackRewardDistance.Length - 1);
 
-            if (distanceToOpponent < AttackRewardDistance[attackIndex])
+            if (_distanceToOpponent < AttackRewardDistance[attackIndex])
             {
                 AddReward(AttackReward);
             }
@@ -135,7 +115,7 @@ public class FightingAgent : StickAgent
             }
         }
 
-        isAttacking = isAttackingNow;
+        _isAttacking = isAttackingNow;
     }
 
     protected override void WriteHeuristicActions(ActionSegment<int> discreteActions, Keyboard keyboard)
@@ -154,9 +134,34 @@ public class FightingAgent : StickAgent
     {
     }
 
+    protected void PairOpponent()
+    {
+        if (Opponent != null)
+        {
+            return;
+        }
+
+        if (_opponentAgent != null)
+        {
+            SetupOpponent(_opponentAgent);
+            return;
+        }
+
+        var academy = GetComponentInParent<TrainingAcademy>();
+        var agents = academy.GetComponentsInChildren<StickAgent>();
+        for (var i = 0; i < agents.Length; i++)
+        {
+            if (agents[i] != this)
+            {
+                SetupOpponent(agents[i]);
+                break;
+            }
+        }
+    }
+
     private static void GetAttackObservationsArray(float[] attackObservations, int animationStateIndex)
     {
-        int attackIndex = animationStateIndex - 2;
+        var attackIndex = animationStateIndex - 2;
         attackObservations[0] = attackIndex == 0 ? 1f : 0f;
         attackObservations[1] = attackIndex == 1 ? 1f : 0f;
         attackObservations[2] = attackIndex == 2 ? 1f : 0f;
