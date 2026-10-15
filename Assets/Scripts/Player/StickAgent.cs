@@ -2,11 +2,13 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Sensors;
 using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Policies;
 using UnityEngine.InputSystem;
 
 public abstract class StickAgent : Agent
 {
     [SerializeField] private int teamId;
+    [SerializeField] private bool _runInferenceOnly;
 
     protected float[] Observations => _observations;
 
@@ -18,6 +20,17 @@ public abstract class StickAgent : Agent
     public Player AgentPlayer => _player;
     public Rigidbody2D AgentRigidbody => _rb;
     public StickAgent Opponent { get; private set; }
+    public int TeamId => teamId;
+
+    public bool RunInferenceOnly
+    {
+        get => _runInferenceOnly;
+        set
+        {
+            _runInferenceOnly = value;
+            ApplyInferenceMode();
+        }
+    }
 
     protected StickAgentInputDevice InputDevice => _inputDevice;
 
@@ -50,6 +63,31 @@ public abstract class StickAgent : Agent
             decisionRequester.DecisionPeriod = 2;
             decisionRequester.TakeActionsBetweenDecisions = true;
         }
+
+        ApplyInferenceMode();
+    }
+
+    public void ApplyInferenceMode()
+    {
+        if (TryGetComponent(out BehaviorParameters behaviorParameters))
+        {
+            if (_runInferenceOnly || TrainingModeChecker.IsInferenceMode)
+            {
+                Time.timeScale = 1f;
+                behaviorParameters.BehaviorType = behaviorParameters.Model != null
+                    ? BehaviorType.InferenceOnly
+                    : BehaviorType.HeuristicOnly;
+            }
+            else
+            {
+                behaviorParameters.BehaviorType = BehaviorType.Default;
+            }
+        }
+    }
+
+    protected virtual void OnValidate()
+    {
+        ApplyInferenceMode();
     }
 
     public override void OnEpisodeBegin()
@@ -114,6 +152,10 @@ public abstract class StickAgent : Agent
     public void SetupOpponent(StickAgent opponent)
     {
         Opponent = opponent;
+    }
+
+    public virtual void OnHitLanded(Player target)
+    {
     }
 
     protected virtual void WriteHeuristicActions(ActionSegment<int> discreteActions, Keyboard keyboard)

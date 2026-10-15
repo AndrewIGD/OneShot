@@ -11,6 +11,7 @@ public class TrainingAcademy : MonoBehaviour
     protected StickAgent[] Agents => agents;
 
     private int _episodeStepCount;
+    private bool _isEpisodeOver;
 
     private void Start()
     {
@@ -49,10 +50,13 @@ public class TrainingAcademy : MonoBehaviour
     protected virtual IEnumerator ResetEnvironmentCoroutine()
     {
         yield return null;
+
         foreach (var agent in agents)
         {
             ResetAgent(agent);
         }
+
+        _isEpisodeOver = false;
     }
 
     public void TriggerReset()
@@ -72,6 +76,12 @@ public class TrainingAcademy : MonoBehaviour
 
     protected void InterruptEpisode()
     {
+        if (_isEpisodeOver)
+        {
+            return;
+        }
+        _isEpisodeOver = true;
+
         foreach (var agent in agents)
         {
             agent.EpisodeInterrupted();
@@ -95,12 +105,19 @@ public class TrainingAcademy : MonoBehaviour
 
     public void OnAgentLose(StickAgent agent)
     {
+        if (_isEpisodeOver)
+        {
+            return;
+        }
+        _isEpisodeOver = true;
+
         agent.AddReward(-1f);
         foreach (var a in agents)
         {
             if (a != agent)
             {
                 a.AddReward(1f);
+                ScoreTracker.RecordWin(a.TeamId);
             }
         }
         EndEpisode();

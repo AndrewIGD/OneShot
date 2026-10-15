@@ -10,11 +10,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1730251958252199009, guid: fa43371f67bdacf41919f536ea8b00b4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -6
+      value: 5.0751495
       objectReference: {fileID: 0}
     - target: {fileID: 1730251958252199009, guid: fa43371f67bdacf41919f536ea8b00b4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -2.4
+      value: -1.8410201
       objectReference: {fileID: 0}
     - target: {fileID: 1730251958252199009, guid: fa43371f67bdacf41919f536ea8b00b4, type: 3}
       propertyPath: m_LocalPosition.z
@@ -56,6 +56,22 @@ PrefabInstance:
       propertyPath: m_BrainParameters.VectorObservationSize
       value: 40
       objectReference: {fileID: 0}
+    - target: {fileID: 7833638104136992646, guid: fa43371f67bdacf41919f536ea8b00b4, type: 3}
+      propertyPath: m_BrainParameters.VectorActionSize.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7833638104136992646, guid: fa43371f67bdacf41919f536ea8b00b4, type: 3}
+      propertyPath: 'm_BrainParameters.VectorActionSize.Array.data[5]'
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7833638104136992646, guid: fa43371f67bdacf41919f536ea8b00b4, type: 3}
+      propertyPath: m_BrainParameters.m_ActionSpec.BranchSizes.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7833638104136992646, guid: fa43371f67bdacf41919f536ea8b00b4, type: 3}
+      propertyPath: 'm_BrainParameters.m_ActionSpec.BranchSizes.Array.data[5]'
+      value: 2
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -89,6 +105,7 @@ MonoBehaviour:
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
   teamId: 0
+  _runInferenceOnly: 0
 --- !u!114 &6184656148921842134
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101,6 +118,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.DecisionRequester
-  DecisionPeriod: 3
+  DecisionPeriod: 2
   DecisionStep: 0
   TakeActionsBetweenDecisions: 1

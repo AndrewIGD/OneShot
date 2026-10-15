@@ -417,7 +417,7 @@ public class Player : MonoBehaviour
             _academy = GetComponentInParent<TrainingAcademy>();
         }
 
-        if (Academy.IsInitialized && Academy.Instance.IsCommunicatorOn)
+        if (TrainingModeChecker.IsTrainingMode)
         {
             return;
         }
@@ -434,6 +434,11 @@ public class Player : MonoBehaviour
         _animator = GetComponent<Animator>();
         _animator.updateMode = AnimatorUpdateMode.Fixed;
         _gravity = _rb.gravityScale;
+
+        if (TrainingModeChecker.IsTrainingMode)
+        {
+            return;
+        }
 
         Camera.main.GetComponent<CameraFollow>().AddPlayer(this);
     }

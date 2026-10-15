@@ -166,27 +166,4 @@ public class StickAgentInputDevice : InputDevice
     public override bool Dash => _dash;
     public override bool FastFall => _fastFall;
     public override bool Attack => _attack;
-
-    public override void Update()
-    {
-        UpDown = Up;
-        DownDown = Down;
-        LeftDown = Left;
-        RightDown = Right;
-
-        JumpDown = Jump;
-        DashDown = Dash;
-        FastFallDown = FastFall;
-        AttackDown = Attack;
-    
-        UpUp = !Up;
-        DownUp = !Down;
-        LeftUp = !Left;
-        RightUp = !Right;
-
-        JumpUp = !Jump;
-        DashUp = !Dash;
-        FastFallUp = !FastFall;
-        AttackUp = !Attack;
-    }
 }

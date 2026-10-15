@@ -4,10 +4,15 @@ using UnityEngine.InputSystem;
 
 public class FightingStickV2 : StickAgent
 {
-    private const float MaxArenaDistance = 40f;
+    protected const float MaxArenaDistance = 50f;
     private const float StepPenalty = -0.001f;
     private const float CloseDistanceReward = 0.01f;
     private const float DistancePenalty = -0.01f;
+    private const float AttackReward = 0.05f;
+    private const float AttackPenalty = -0.02f;
+    private const float HitReward = 0.5f;
+
+    private static readonly float[] AttackRewardDistances = { 5f, 9f, 6f, 5f, 8f, 6f };
 
     protected override int ObservationSize => 40;
     protected override bool UsesDodgeAction => false;
@@ -15,11 +20,15 @@ public class FightingStickV2 : StickAgent
     private readonly float[] _attackObservations = new float[8];
     private readonly float[] _opponentAttackObservations = new float[8];
     private float _distanceToOpponent;
+    private Vector2 _previousPosition;
+    private bool _isAttacking;
 
     public override void OnEpisodeBegin()
     {
         base.OnEpisodeBegin();
         PairOpponent();
+        _isAttacking = false;
+        _previousPosition = transform.position;
         _distanceToOpponent = Vector2.Distance(transform.position, Opponent.transform.position);
     }
 
@@ -27,6 +36,8 @@ public class FightingStickV2 : StickAgent
     {
         base.Reset();
         PairOpponent();
+        _isAttacking = false;
+        _previousPosition = transform.position;
         _distanceToOpponent = Vector2.Distance(transform.position, Opponent.transform.position);
     }
 
@@ -38,9 +49,10 @@ public class FightingStickV2 : StickAgent
         var left = discreteActions[1] == 1;
         var right = discreteActions[2] == 1;
         var up = discreteActions[3] == 1;
+        var jump = discreteActions.Length > 5 ? discreteActions[4] == 1 : up;
         var attack = discreteActions.Length > 5 ? discreteActions[5] == 1 : discreteActions[4] == 1;
 
-        InputDevice.SetState(up, down, left, right, false, false, down, attack);
+        InputDevice.SetState(up, down, left, right, jump, false, down, attack);
         InputDevice.Update();
 
         AddActionRewards();
@@ -67,8 +79,7 @@ public class FightingStickV2 : StickAgent
         Observations[i++] = relativeVelocity.x / Player.MovementSpeed;
         Observations[i++] = relativeVelocity.y / Player.MaxFallSpeed;
         Observations[i++] = Player.IsGrounded ? 1f : 0f;
-        Observations[i++] = 0f;
-        Observations[i++] = 0f;
+        PopulateResourceObservations(ref i, Player);
         Observations[i++] = transform.localEulerAngles.y > 90f ? 1f : 0f;
 
         PopulateAttackObservations(_attackObservations, Player.AnimationStateIndex);
@@ -87,8 +98,7 @@ public class FightingStickV2 : StickAgent
         Observations[i++] = -relativeVelocity.x / opponentPlayer.MovementSpeed;
         Observations[i++] = -relativeVelocity.y / opponentPlayer.MaxFallSpeed;
         Observations[i++] = opponentPlayer.IsGrounded ? 1f : 0f;
-        Observations[i++] = 0f;
-        Observations[i++] = 0f;
+        PopulateResourceObservations(ref i, opponentPlayer);
         Observations[i++] = Opponent.transform.localEulerAngles.y > 90f ? 1f : 0f;
 
         PopulateAttackObservations(_opponentAttackObservations, opponentPlayer.AnimationStateIndex);
@@ -104,19 +114,46 @@ public class FightingStickV2 : StickAgent
     {
         AddReward(StepPenalty * Time.fixedDeltaTime);
 
-        var currentDistance = Vector2.Distance(transform.position, Opponent.transform.position);
-        var distanceDelta = _distanceToOpponent - currentDistance;
+        var currentPosition = (Vector2)transform.position;
+        var movement = currentPosition - _previousPosition;
+        var toOpponent = ((Vector2)Opponent.transform.position - _previousPosition).normalized;
+        var approachDelta = Vector2.Dot(movement, toOpponent);
+        _previousPosition = currentPosition;
 
-        if (distanceDelta > 0f)
+        if (approachDelta > 0f)
         {
-            AddReward(CloseDistanceReward * distanceDelta);
+            AddReward(CloseDistanceReward * approachDelta);
         }
-        else if (distanceDelta < 0f)
+        else if (approachDelta < 0f)
         {
-            AddReward(DistancePenalty * Mathf.Abs(distanceDelta));
+            AddReward(DistancePenalty * Mathf.Abs(approachDelta));
         }
 
-        _distanceToOpponent = currentDistance;
+        _distanceToOpponent = Vector2.Distance(transform.position, Opponent.transform.position);
+
+        var animIndex = Player.AnimationStateIndex;
+        var isAttackingNow = animIndex >= 0 && animIndex <= 5;
+        var attackStartedThisFrame = isAttackingNow && !_isAttacking;
+
+        if (attackStartedThisFrame)
+        {
+            var attackIndex = Mathf.Clamp(animIndex, 0, AttackRewardDistances.Length - 1);
+            if (_distanceToOpponent < AttackRewardDistances[attackIndex])
+            {
+                AddReward(AttackReward);
+            }
+            else
+            {
+                AddReward(AttackPenalty);
+            }
+        }
+
+        _isAttacking = isAttackingNow;
+    }
+
+    public override void OnHitLanded(Player target)
+    {
+        AddReward(HitReward);
     }
 
     protected override void WriteHeuristicActions(ActionSegment<int> discreteActions, Keyboard keyboard)
@@ -129,7 +166,7 @@ public class FightingStickV2 : StickAgent
         var attack = keyboard.slashKey.isPressed || keyboard.jKey.isPressed;
         if (discreteActions.Length > 5)
         {
-            discreteActions[4] = 0;
+            discreteActions[4] = keyboard.spaceKey.isPressed ? 1 : 0;
             discreteActions[5] = attack ? 1 : 0;
             if (discreteActions.Length > 6)
             {
@@ -166,5 +203,11 @@ public class FightingStickV2 : StickAgent
         {
             array[i] = animationStateIndex == i ? 1f : 0f;
         }
+    }
+
+    protected virtual void PopulateResourceObservations(ref int index, Player player)
+    {
+        Observations[index++] = 0f;
+        Observations[index++] = 0f;
     }
 }

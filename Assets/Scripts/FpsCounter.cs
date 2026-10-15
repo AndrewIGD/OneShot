@@ -9,11 +9,13 @@ public class FpsCounter : MonoBehaviour
     private int _frameCount;
     private int _fps;
     private GUIStyle _style;
+    private GUIStyle _blueStyle;
+    private GUIStyle _redStyle;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Initialize()
     {
-        var isTraining = Academy.IsInitialized && Academy.Instance.IsCommunicatorOn;
+        var isTraining = TrainingModeChecker.IsTrainingMode;
         if (isTraining)
         {
             return;
@@ -31,6 +33,18 @@ public class FpsCounter : MonoBehaviour
         _style.fontSize = 18;
         _style.fontStyle = FontStyle.Bold;
         _style.normal.textColor = Color.green;
+
+        _blueStyle = new GUIStyle();
+        _blueStyle.alignment = TextAnchor.UpperRight;
+        _blueStyle.fontSize = 18;
+        _blueStyle.fontStyle = FontStyle.Bold;
+        _blueStyle.normal.textColor = new Color(0.35f, 0.7f, 1f);
+
+        _redStyle = new GUIStyle();
+        _redStyle.alignment = TextAnchor.UpperRight;
+        _redStyle.fontSize = 18;
+        _redStyle.fontStyle = FontStyle.Bold;
+        _redStyle.normal.textColor = new Color(1f, 0.35f, 0.35f);
     }
 
     private void Update()
@@ -61,13 +75,18 @@ public class FpsCounter : MonoBehaviour
 
     private void OnGUI()
     {
-        var isTraining = Academy.IsInitialized && Academy.Instance.IsCommunicatorOn;
+        var isTraining = TrainingModeChecker.IsTrainingMode;
         if (isTraining)
         {
             return;
         }
 
-        var rect = new Rect(Screen.width - 120, 10, 110, 30);
-        GUI.Label(rect, $"{_fps} FPS", _style);
+        var fpsRect = new Rect(Screen.width - 150, 10, 140, 24);
+        var blueRect = new Rect(Screen.width - 150, 34, 140, 24);
+        var redRect = new Rect(Screen.width - 150, 58, 140, 24);
+
+        GUI.Label(fpsRect, $"{_fps} FPS", _style);
+        GUI.Label(blueRect, $"Blue: {ScoreTracker.BlueScore}", _blueStyle);
+        GUI.Label(redRect, $"Red: {ScoreTracker.RedScore}", _redStyle);
     }
 }

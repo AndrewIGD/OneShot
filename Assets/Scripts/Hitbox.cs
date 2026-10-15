@@ -39,9 +39,14 @@ public class Hitbox : MonoBehaviour
 
         _hit.Add(player);
 
+        if (parent.TryGetComponent(out StickAgent attackerAgent))
+        {
+            attackerAgent.OnHitLanded(player);
+        }
+
         player.Launch(new Vector2(launchDir.x * (parent.transform.eulerAngles.y > 90 ? -1 : 1), launchDir.y) * launchSpeed);
 
-        var isTraining = Academy.IsInitialized && Academy.Instance.IsCommunicatorOn;
+        var isTraining = TrainingModeChecker.IsTrainingMode;
         if (!isTraining)
         {
             StartCoroutine(BlastParticles(collision.ClosestPoint(transform.position)));

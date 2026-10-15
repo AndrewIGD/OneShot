@@ -31,16 +31,21 @@ public static class FrameRateConfigurator
             Physics2D.IgnoreLayerCollision(playerNoHitLayer, playerNoHitLayer, true);
         }
 
-        var isTraining = Academy.IsInitialized && Academy.Instance.IsCommunicatorOn;
+        var isTraining = TrainingModeChecker.IsTrainingMode;
         if (isTraining)
         {
             Application.targetFrameRate = -1;
             Time.maximumDeltaTime = TrainingMaximumDeltaTime;
+            AudioListener.volume = 0f;
+            AudioListener.pause = true;
         }
         else
         {
+            Time.timeScale = 1f;
             Application.targetFrameRate = TargetFrameRate;
             Time.maximumDeltaTime = 0.05f;
+            AudioListener.volume = 1f;
+            AudioListener.pause = false;
         }
     }
 }

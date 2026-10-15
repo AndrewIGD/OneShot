@@ -31,10 +31,75 @@ public static class FightingAcademyBuilder
         ConfigureActiveScene();
     }
 
+    [MenuItem("OneShot/ML-Agents/Convert All Agents to DodgingStickV2 (50 obs, 6 actions)")]
+    public static void ConvertAllAgentsToDodgingStickV2()
+    {
+        SwitchAgentType<DodgingStickV2>();
+    }
+
+    [MenuItem("OneShot/ML-Agents/Convert All Agents to FightingStickV2 (40 obs, 6 actions)")]
+    public static void ConvertAllAgentsToFightingStickV2()
+    {
+        SwitchAgentType<FightingStickV2>();
+    }
+
+    [MenuItem("OneShot/Reset Game Speed (1x TimeScale)")]
+    public static void ResetGameSpeed()
+    {
+        Time.timeScale = 1f;
+        AudioListener.volume = 1f;
+        AudioListener.pause = false;
+        FrameRateConfigurator.ApplyFrameRateSettings();
+    }
+
+    [MenuItem("OneShot/ML-Agents/Toggle Inference Only Mode")]
+    public static void ToggleInferenceOnlyMode()
+    {
+        var current = PlayerPrefs.GetInt("OneShot_InferenceOnly", 0);
+        var newValue = current == 1 ? 0 : 1;
+        PlayerPrefs.SetInt("OneShot_InferenceOnly", newValue);
+        PlayerPrefs.Save();
+        TrainingModeChecker.ForceInferenceMode = newValue == 1;
+        Time.timeScale = 1f;
+        AudioListener.volume = 1f;
+        AudioListener.pause = false;
+        ConfigureAllAgentsBehaviorType(newValue == 1 ? BehaviorType.InferenceOnly : BehaviorType.Default);
+        FrameRateConfigurator.ApplyFrameRateSettings();
+    }
+
+    [MenuItem("OneShot/ML-Agents/Toggle Inference Only Mode", true)]
+    public static bool ToggleInferenceOnlyModeValidate()
+    {
+        Menu.SetChecked("OneShot/ML-Agents/Toggle Inference Only Mode", PlayerPrefs.GetInt("OneShot_InferenceOnly", 0) == 1);
+        return true;
+    }
+
+    [MenuItem("OneShot/ML-Agents/Force Training Mode (Enable Training)")]
+    public static void ForceTrainingMode()
+    {
+        PlayerPrefs.SetInt("OneShot_InferenceOnly", 0);
+        PlayerPrefs.Save();
+        TrainingModeChecker.ForceInferenceMode = false;
+        ConfigureAllAgentsBehaviorType(BehaviorType.Default);
+        FrameRateConfigurator.ApplyFrameRateSettings();
+    }
+
     [InitializeOnLoadMethod]
     private static void InitializeOnLoad()
     {
         EditorApplication.delayCall += CheckAndBuild;
+        EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+    }
+
+    private static void OnPlayModeStateChanged(PlayModeStateChange state)
+    {
+        if (state == PlayModeStateChange.EnteredEditMode)
+        {
+            Time.timeScale = 1f;
+            AudioListener.volume = 1f;
+            AudioListener.pause = false;
+            FrameRateConfigurator.ApplyFrameRateSettings();
+        }
     }
 
     private static void CheckAndBuild()
@@ -105,14 +170,11 @@ public static class FightingAcademyBuilder
     private static void ConfigureActiveScene()
     {
         var activeScene = EditorSceneManager.GetActiveScene();
-        var rootObjects = activeScene.GetRootGameObjects();
+        var academies = Object.FindObjectsByType<TrainingAcademy>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
-        foreach (var rootObject in rootObjects)
+        foreach (var academy in academies)
         {
-            if (rootObject.name.Contains("Academy"))
-            {
-                ConfigureAcademyObject(rootObject);
-            }
+            ConfigureAcademyObject(academy.gameObject);
         }
 
         EditorSceneManager.MarkSceneDirty(activeScene);
@@ -172,22 +234,39 @@ public static class FightingAcademyBuilder
         var behaviorParams = agentObject.GetComponent<BehaviorParameters>();
         if (behaviorParams != null)
         {
+            var isDodging = agentObject.GetComponent<DodgingStickV2>() != null;
             behaviorParams.BehaviorName = TargetBehaviorName;
             behaviorParams.TeamId = teamId;
-            behaviorParams.BrainParameters.VectorObservationSize = TargetObservationSize;
-            behaviorParams.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(2, 2, 2, 2, 2);
-            behaviorParams.BehaviorType = BehaviorType.Default;
+            behaviorParams.BrainParameters.VectorObservationSize = isDodging ? 50 : 40;
+            if (behaviorParams.BrainParameters.ActionSpec.NumDiscreteActions != 6)
+            {
+                behaviorParams.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(2, 2, 2, 2, 2, 2);
+            }
+            behaviorParams.BehaviorType = PlayerPrefs.GetInt("OneShot_InferenceOnly", 0) == 1
+                ? (behaviorParams.Model != null ? BehaviorType.InferenceOnly : BehaviorType.HeuristicOnly)
+                : BehaviorType.Default;
             EditorUtility.SetDirty(behaviorParams);
         }
 
-        var decisionRequester = agentObject.GetComponent<DecisionRequester>();
-        if (decisionRequester == null)
+        var decisionRequesters = agentObject.GetComponents<DecisionRequester>();
+        if (decisionRequesters.Length == 0)
         {
-            decisionRequester = agentObject.AddComponent<DecisionRequester>();
+            var dr = agentObject.AddComponent<DecisionRequester>();
+            dr.DecisionPeriod = 2;
+            dr.TakeActionsBetweenDecisions = true;
+            EditorUtility.SetDirty(dr);
         }
-        decisionRequester.DecisionPeriod = 2;
-        decisionRequester.TakeActionsBetweenDecisions = true;
-        EditorUtility.SetDirty(decisionRequester);
+        else
+        {
+            decisionRequesters[0].DecisionPeriod = 2;
+            decisionRequesters[0].TakeActionsBetweenDecisions = true;
+            EditorUtility.SetDirty(decisionRequesters[0]);
+
+            for (var i = 1; i < decisionRequesters.Length; i++)
+            {
+                Object.DestroyImmediate(decisionRequesters[i], true);
+            }
+        }
 
         var player = agentObject.GetComponent<Player>();
         if (player != null)
@@ -278,5 +357,90 @@ public static class FightingAcademyBuilder
         EditorSceneManager.SaveScene(scene, TargetScenePath);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
+    }
+
+    private static void ConfigureAllAgentsBehaviorType(BehaviorType behaviorType)
+    {
+        var activeScene = EditorSceneManager.GetActiveScene();
+        var allAgents = Object.FindObjectsByType<StickAgent>(FindObjectsSortMode.None);
+        for (var i = 0; i < allAgents.Length; i++)
+        {
+            if (allAgents[i].TryGetComponent(out BehaviorParameters behaviorParams))
+            {
+                if (behaviorType == BehaviorType.InferenceOnly)
+                {
+                    behaviorParams.BehaviorType = behaviorParams.Model != null
+                        ? BehaviorType.InferenceOnly
+                        : BehaviorType.HeuristicOnly;
+                }
+                else
+                {
+                    behaviorParams.BehaviorType = BehaviorType.Default;
+                }
+                EditorUtility.SetDirty(behaviorParams);
+            }
+        }
+        EditorSceneManager.MarkSceneDirty(activeScene);
+    }
+
+    private static void SwitchAgentType<T>() where T : StickAgent
+    {
+        var root = PrefabUtility.LoadPrefabContents(TargetPrefabPath);
+        var prefabAgents = root.GetComponentsInChildren<StickAgent>(true);
+        for (var i = 0; i < prefabAgents.Length; i++)
+        {
+            ReplaceAgentComponent<T>(prefabAgents[i].gameObject, i % 2);
+        }
+        PrefabUtility.SaveAsPrefabAsset(root, TargetPrefabPath);
+        PrefabUtility.UnloadPrefabContents(root);
+
+        var activeScene = EditorSceneManager.GetActiveScene();
+        var academies = Object.FindObjectsByType<TrainingAcademy>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var academy in academies)
+        {
+            var agents = academy.GetComponentsInChildren<StickAgent>(true);
+            for (var i = 0; i < agents.Length; i++)
+            {
+                ReplaceAgentComponent<T>(agents[i].gameObject, i % 2);
+            }
+        }
+
+        ConfigureTargetPrefab();
+        ConfigureActiveScene();
+    }
+
+    private static void ReplaceAgentComponent<T>(GameObject agentObject, int teamId) where T : StickAgent
+    {
+        var existing = agentObject.GetComponent<StickAgent>();
+        if (existing != null && existing.GetType() != typeof(T))
+        {
+            Object.DestroyImmediate(existing, true);
+            existing = agentObject.AddComponent<T>();
+        }
+        else if (existing == null)
+        {
+            existing = agentObject.AddComponent<T>();
+        }
+
+        var serializedAgent = new SerializedObject(existing);
+        var teamIdProp = serializedAgent.FindProperty("teamId");
+        if (teamIdProp != null)
+        {
+            teamIdProp.intValue = teamId;
+            serializedAgent.ApplyModifiedProperties();
+        }
+        EditorUtility.SetDirty(existing);
+
+        var behaviorParams = agentObject.GetComponent<BehaviorParameters>();
+        if (behaviorParams != null)
+        {
+            var isDodging = typeof(T) == typeof(DodgingStickV2);
+            behaviorParams.BehaviorName = TargetBehaviorName;
+            behaviorParams.TeamId = teamId;
+            behaviorParams.BrainParameters.VectorObservationSize = isDodging ? 50 : 40;
+            behaviorParams.BrainParameters.ActionSpec = ActionSpec.MakeDiscrete(2, 2, 2, 2, 2, 2);
+            behaviorParams.Model = null;
+            EditorUtility.SetDirty(behaviorParams);
+        }
     }
 }
